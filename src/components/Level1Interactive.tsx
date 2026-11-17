@@ -3,16 +3,15 @@ import type { UserProfile, UnitSubmission } from '../types';
 import { ApiService } from '../services/api';
 import { UNITS_DATA } from '../data/modulesData';
 import { ActivityFlowContainer } from './ActivityFlowContainer';
+import { Unit1_1Interactive } from './Unit1_1Interactive';
 import { CurriculumModal } from './CurriculumModal';
 import { 
   CheckCircle2, 
   BookOpen, 
   ArrowRight, 
-  MessageSquare, 
   Users, 
   ShieldCheck, 
   Send, 
-  Sparkles,
   Lock
 } from 'lucide-react';
 
@@ -29,18 +28,6 @@ export const Level1Interactive: React.FC<Props> = ({ onPassLevel, onBackToDashbo
   const [submissions, setSubmissions] = useState<Record<string, UnitSubmission>>(() => {
     const prog = ApiService.getLocalProgress();
     return prog.unitSubmissions || {};
-  });
-
-  // State ฟอร์มของหน่วย 1.1 (แผนสื่อสาร 4 ช่อง) - เริ่มต้นด้วยค่าว่างเพื่อให้ผู้บริหารคิดและเขียนเอง
-  const [form1_1, setForm1_1] = useState(() => {
-    const saved = submissions['1.1']?.formData || {};
-    return {
-      goal: saved['เป้าหมาย'] || '',
-      audienceMain: saved['ผู้รับสารหลัก'] || '',
-      audienceSub: saved['ผู้รับสารรอง'] || '',
-      keyMessage: saved['ข้อความหลัก'] || '',
-      channels: saved['ช่องทางและเหตุผล'] || ''
-    };
   });
 
   // State ฟอร์มของหน่วย 1.2 (เครือข่ายพันธมิตร)
@@ -70,8 +57,6 @@ export const Level1Interactive: React.FC<Props> = ({ onPassLevel, onBackToDashbo
       consentNote: saved['ข้อความขอความยินยอม'] || ''
     };
   });
-
-  const [showSampleGuidance, setShowSampleGuidance] = useState(false);
 
   const isCompleted1_1 = !!submissions['1.1'];
   const isCompleted1_2 = !!submissions['1.2'];
@@ -134,7 +119,7 @@ export const Level1Interactive: React.FC<Props> = ({ onPassLevel, onBackToDashbo
             }`}
           >
             <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-bold text-amber-800">หน่วย 1.1 (45 น.)</span>
+              <span className="text-xs font-bold text-amber-800">หน่วย 1.1 (61 น.)</span>
               {isCompleted1_1 ? (
                 <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-700">
                   <CheckCircle2 className="w-3.5 h-3.5" /> ผ่านแล้ว ({submissions['1.1']?.totalScore}/10)
@@ -245,143 +230,12 @@ export const Level1Interactive: React.FC<Props> = ({ onPassLevel, onBackToDashbo
 
       {/* RENDER ACTIVE SUB-UNIT */}
       {activeUnitId === '1.1' && (
-        <ActivityFlowContainer
-          unit={UNITS_DATA['1.1']}
+        <Unit1_1Interactive
           profile={profile}
           existingSubmission={submissions['1.1']}
-          formData={{
-            'เป้าหมาย': form1_1.goal,
-            'ผู้รับสารหลัก': form1_1.audienceMain,
-            'ผู้รับสารรอง': form1_1.audienceSub,
-            'ข้อความหลัก': form1_1.keyMessage,
-            'ช่องทางและเหตุผล': form1_1.channels
-          }}
-          isStep4Valid={
-            !!form1_1.goal.trim() &&
-            !!form1_1.audienceMain.trim() &&
-            !!form1_1.audienceSub.trim() &&
-            !!form1_1.keyMessage.trim() &&
-            !!form1_1.channels.trim()
-          }
           onSubmitUnit={handleUnitSubmit}
           onNextUnit={() => handleNextUnitFrom('1.1')}
           onBackToDashboard={onBackToDashboard}
-          childrenStep4={
-            <div className="space-y-4">
-              <div className="bg-slate-50/80 border border-slate-200/90 rounded-3xl p-6 space-y-4">
-                <div className="font-extrabold text-slate-900 text-base flex items-center gap-2">
-                  <MessageSquare className="w-5 h-5 text-amber-600" /> แบบฟอร์มแผนสื่อสาร 4 ช่อง (4-Cell Plan Form)
-                </div>
-
-                {/* Collapsible Sample Guidance */}
-                <div className="border border-amber-200/90 rounded-2xl overflow-hidden bg-amber-50/60 mb-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowSampleGuidance(!showSampleGuidance)}
-                    className="w-full p-3.5 flex items-center justify-between text-left text-xs sm:text-sm font-bold text-amber-900 hover:bg-amber-100/70 transition cursor-pointer"
-                  >
-                    <span className="flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-amber-600" />
-                      💡 ดูแนวทางการตอบแผนสื่อสาร 4 ช่อง (คลิกเพื่อดูโครงสร้างการตอบ)
-                    </span>
-                    <span className="text-xs text-amber-700 underline font-semibold">
-                      {showSampleGuidance ? 'ซ่อนแนวทาง' : 'เปิดดูแนวทาง'}
-                    </span>
-                  </button>
-                  {showSampleGuidance && (
-                    <div className="p-4 bg-white border-t border-amber-200 text-xs sm:text-sm space-y-2 text-slate-700 leading-relaxed">
-                      <p className="font-bold text-amber-900">โครงสร้างและแนวทางการเขียนคำตอบด้วยตนเอง:</p>
-                      <ul className="list-disc list-inside space-y-1.5 text-slate-600">
-                        <li><strong>เป้าหมาย:</strong> เขียน 1 ประโยคตามโครงสร้าง "ต้องการให้ [กลุ่มเป้าหมาย] [ทราบ/ปฏิบัติสิ่งใด] ภายใน [กรอบเวลาใด]"</li>
-                        <li><strong>ผู้รับสารหลัก:</strong> ระบุกลุ่มเป้าหมายหลักที่ต้องรับทราบและปฏิบัติทันที พร้อมระบุสิ่งที่ต้องทำ</li>
-                        <li><strong>ผู้รับสารรอง:</strong> ระบุบุคลากรหรือผู้เกี่ยวข้องที่ช่วยประสานงานและสนับสนุน</li>
-                        <li><strong>ข้อความหลัก:</strong> ร่างข้อความสั้นกระชับไม่เกิน 3 ประโยค (1. เกิดอะไรขึ้น 2. ต้องทำอย่างไร 3. ติดตามข้อมูลต่อได้ที่ไหน/เมื่อไร)</li>
-                        <li><strong>ช่องทาง:</strong> เลือก 2–3 ช่องทางที่ผสมผสานทั้งช่องทางดิจิทัลที่รวดเร็วและช่องทางชุมชนสำหรับผู้ไม่มีสมาร์ทโฟน พร้อมระบุเหตุผล</li>
-                      </ul>
-                      <p className="text-[11px] text-rose-600 font-semibold mt-2">
-                        *ห้ามคัดลอกข้อความจากตัวอย่างต้นแบบมาส่ง ระบบจะตรวจจับและไม่อนุมัติให้ผ่านเกณฑ์ โปรดเขียนด้วยสำนวนและบริบทของโรงเรียนท่านเอง
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* 1. เป้าหมาย */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    1. เป้าหมาย (Goal): 1 ประโยค ระบุ "ใคร ทำอะไร เมื่อไร"
-                  </label>
-                  <input
-                    type="text"
-                    value={form1_1.goal}
-                    onChange={(e) => setForm1_1({ ...form1_1, goal: e.target.value })}
-                    placeholder="ระบุเป้าหมาย 1 ประโยค (ต้องการให้ใคร ทราบหรือทำอะไร ภายในเวลาใด)..."
-                    className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
-                  />
-                </div>
-
-                {/* 2. ผู้รับสารหลัก / รอง */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                      2.1 ผู้รับสารหลัก (สิ่งที่ต้องรู้/ปฏิบัติ)
-                    </label>
-                    <input
-                      type="text"
-                      value={form1_1.audienceMain}
-                      onChange={(e) => setForm1_1({ ...form1_1, audienceMain: e.target.value })}
-                      placeholder="ระบุกลุ่มผู้รับสารหลัก และสิ่งที่ต้องการให้ปฏิบัติ..."
-                      className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-2 text-sm text-slate-900"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                      2.2 ผู้รับสารรอง (บทบาทสนับสนุน)
-                    </label>
-                    <input
-                      type="text"
-                      value={form1_1.audienceSub}
-                      onChange={(e) => setForm1_1({ ...form1_1, audienceSub: e.target.value })}
-                      placeholder="ระบุกลุ่มผู้รับสารรอง และบทบาทในการช่วยประสานงาน..."
-                      className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-2 text-sm text-slate-900"
-                    />
-                  </div>
-                </div>
-
-                {/* 3. ข้อความหลัก */}
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                      3. ข้อความหลัก (Key Message): ไม่เกิน 3 ประโยค สั้น กระชับ ชัดเจน
-                    </label>
-                    <span className="text-[11px] text-slate-400">
-                      {form1_1.keyMessage.length} ตัวอักษร
-                    </span>
-                  </div>
-                  <textarea
-                    rows={3}
-                    value={form1_1.keyMessage}
-                    onChange={(e) => setForm1_1({ ...form1_1, keyMessage: e.target.value })}
-                    placeholder="ร่างข้อความประชาสัมพันธ์สั้นกระชับไม่เกิน 3 ประโยค ด้วยสำนวนของท่านเอง..."
-                    className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
-                  />
-                </div>
-
-                {/* 4. ช่องทางสื่อสาร + เหตุผล */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    4. ช่องทางสื่อสาร 2–3 ช่องทาง พร้อมเหตุผลประกอบ
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={form1_1.channels}
-                    onChange={(e) => setForm1_1({ ...form1_1, channels: e.target.value })}
-                    placeholder="ระบุช่องทางสื่อสาร 2–3 ช่องทาง (ครอบคลุมทั้งออนไลน์และช่องทางชุมชน) พร้อมอธิบายเหตุผล..."
-                    className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
-                  />
-                </div>
-              </div>
-            </div>
-          }
         />
       )}
 

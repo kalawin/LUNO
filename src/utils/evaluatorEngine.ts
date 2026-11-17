@@ -308,8 +308,7 @@ export class EvaluatorEngine {
   }
 
   // --------------------------------------------------------------------------
-  // หน่วย 1.1: การวางแผนในการสื่อสาร 4 ช่อง
-  // เกณฑ์ตรงกับ UNITS_DATA['1.1'].rubric: r1_goal (3), r1_channel (4), r1_feasibility (3)
+  // หน่วย 1.1: การวางแผนในการสื่อสาร (4 เกณฑ์: 2 / 3 / 3 / 2 คะแนน = เต็ม 10)
   // --------------------------------------------------------------------------
   private static eval1_1(data: Record<string, any>): UnitEvaluationResult {
     const goal = (data['เป้าหมาย'] || '').trim();
@@ -317,68 +316,90 @@ export class EvaluatorEngine {
     const subAud = (data['ผู้รับสารรอง'] || '').trim();
     const msg = (data['ข้อความหลัก'] || '').trim();
     const channels = (data['ช่องทางและเหตุผล'] || '').trim();
+    const injectedReply = (data['คำตอบเหตุการณ์แทรก'] || '').trim();
+    const scenarioCode = (data['รหัสสถานการณ์'] || data['สถานการณ์ที่เลือก'] || 'A').toString();
 
     const isDup = this.hasDuplicateAnswers([goal, msg, channels]);
+    const msgLines = msg.split(/\r?\n/).map((l: string) => l.trim()).filter(Boolean);
 
-    // 1. r1_goal (เต็ม 3)
-    let s1 = 1;
-    let c1 = 'เป้าหมายหรือข้อความหลักยังไม่ชัดเจน หรือมีความหมายไม่สมบูรณ์';
-    let sug1: string | undefined = 'ระบุเป้าหมายให้ชัดเจนว่า ต้องการให้ [ใคร] [ทราบ/ทำอะไร] ภายใน [เวลาใด] และร่างข้อความหลักไม่เกิน 3 ประโยค';
-    const hasTimeOrUrgency = /(เวลา|ก่อน|ภายใน|ด่วน|วัน|เช้า|โมง|น\.|0[0-9]|1[0-9]|2[0-9])/i.test(goal + msg);
-    const hasWho = /(ผู้ปกครอง|ครู|นักเรียน|ชุมชน|ทุกคน|บุคลากร)/i.test(goal + mainAud);
+    // 1. r1_goal: เป้าหมายและผู้รับสาร (เต็ม 2)
+    let s1 = 0;
+    let c1 = 'เป้าหมายยังกว้างเกินไป หรือยังไม่ระบุ ใคร ทำอะไร เมื่อไร และผู้รับสารหลัก–รอง';
+    let sug1: string | undefined = 'เขียนเป้าหมายตามกรอบ “ให้ [ใคร] ทราบ/ทำ [อะไร] ภายใน [เมื่อไร]” และแยกผู้รับหลัก–รองพร้อมสิ่งที่ต้องรู้';
+    const hasTime = /(เวลา|ก่อน|ภายใน|วันนี้|พรุ่งนี้|เสาร์|อาทิตย์|จันทร์|พุธ|ศุกร์|โมง|น\.|[0-9]{1,2}[.:][0-9]{2})/i.test(goal);
+    const hasWho = /(ผู้ปกครอง|ครอบครัว|ครู|นักเรียน|ครัวเรือน|ชุมชน|ผู้ดูแล)/i.test(goal);
+    const isTooBroadGoal = /^เพื่อประชาสัมพันธ์$/i.test(goal);
 
-    if (isDup) {
-      s1 = 1;
-      c1 = 'พบการวางข้อความซ้ำกันในหลายช่อง กรุณาเขียนแยกตามองค์ประกอบให้ถูกต้อง';
-    } else if (this.isMeaningfulText(goal, 15) && this.isMeaningfulText(msg, 25) && hasWho) {
-      if (hasTimeOrUrgency && msg.length <= 250) {
-        s1 = 3;
-        c1 = 'เป้าหมายระบุกลุ่มเป้าหมายและการกระทำชัดเจน ข้อความหลักกระชับ เข้าใจง่ายและนำไปปฏิบัติได้ทันที';
+    if (!isDup && !isTooBroadGoal && this.isMeaningfulText(goal, 12)) {
+      if (hasWho && hasTime && this.isMeaningfulText(mainAud, 6) && this.isMeaningfulText(subAud, 6)) {
+        s1 = 2;
+        c1 = 'ระบุ ใคร ทำอะไร เมื่อไร ครบถ้วน และแยกผู้รับสารหลัก–รองพร้อมสิ่งที่แต่ละกลุ่มต้องรู้ได้อย่างชัดเจน';
         sug1 = undefined;
       } else {
-        s1 = 2;
-        c1 = 'เป้าหมายชัดเจนดี แต่ข้อความหลักอาจยังไม่ระบุกรอบเวลาที่ชัดเจน';
-        sug1 = 'ระบุเวลาเดดไลน์หรือสิ่งที่ผู้ปกครองต้องปฏิบัติให้ชัดเจนยิ่งขึ้น';
+        s1 = 1;
+        c1 = 'ระบุเป้าหมายได้แต่ยังขาดองค์ประกอบบางส่วน (เช่น เวลา หรือการแยกสิ่งที่ผู้รับหลัก–รองต้องรู้)';
       }
     }
 
-    // 2. r1_channel (เต็ม 4)
+    // 2. r1_message: ข้อความหลัก (เต็ม 3)
     let s2 = 1;
-    let c2 = 'ระบุช่องทางน้อยเกินไปหรือไม่ครอบคลุมกลุ่มเป้าหมาย';
-    let sug2: string | undefined = 'ควรผสมผสานทั้งช่องทางดิจิทัล (เช่น LINE, Facebook) และช่องทางชุมชน (เช่น หอกระจายข่าว, ผู้ใหญ่บ้าน)';
-    const hasOnline = /(line|ไลน์|facebook|เฟซ|เพจ|sms|แอป|เว็บไซต์|ออนไลน์)/i.test(channels);
-    const hasCommunity = /(หอ|กระจายข่าว|ผู้ใหญ่บ้าน|กำนัน|ป้าย|จดหมาย|โทร|อบต|ปากต่อปาก|เพื่อนบ้าน|เสียงตามสาย)/i.test(channels);
+    let c2 = 'ข้อความหลักยังไม่ระบุสิ่งที่ผู้รับต้องทำชัดเจน หรือมีข้อมูลที่ไม่ควรเปิดเผย/ยังไม่ยืนยัน';
+    let sug2: string | undefined = 'เขียนข้อความไม่เกิน 3 บรรทัด บอกสิ่งที่ต้องทำทันที และตรวจจุดที่ต้องจับของสถานการณ์';
+
+    const hasSensitiveLeakInC = scenarioCode.includes('C') && /(ด\.ช\.|ด\.ญ\.|เด็กชาย|เด็กหญิง|ชื่อโรค|ไข้หวัดใหญ่สายพันธุ์|มือเท้าปากระบาดหนัก)/i.test(msg);
+    const hasUnconfirmedOpenInA = scenarioCode.includes('A') && /(พรุ่งนี้เปิดเรียนตามปกติ|เปิดตามปกติพรุ่งนี้)/i.test(msg);
+
+    if (!isDup && this.isMeaningfulText(msg, 20) && !hasSensitiveLeakInC && !hasUnconfirmedOpenInA) {
+      if (msgLines.length >= 1 && msgLines.length <= 3 && msg.length <= 280) {
+        s2 = 3;
+        c2 = 'ข้อความกระชับไม่เกิน 3 ประโยค ผู้รับอ่านแล้วรู้ว่าต้องทำอะไรทันที และผ่านจุดที่ต้องจับของสถานการณ์';
+        sug2 = undefined;
+      } else {
+        s2 = 2;
+        c2 = 'สาระสำคัญครบถ้วน แต่ความยาวเกิน 3 บรรทัด หรือต้องอ่านซ้ำจึงเข้าใจ';
+        sug2 = 'ตัดทอนให้เหลือไม่เกิน 3 บรรทัด (1 ประโยคต่อ 1 บรรทัด)';
+      }
+    }
+
+    // 3. r1_channel: ความเหมาะสมของช่องทาง (เต็ม 3)
+    let s3 = 1;
+    let c3 = 'ช่องทางยังไม่ครอบคลุมกลุ่มผู้รับสารหลักและรอง หรือไม่เหมาะกับความเร่งด่วน';
+    let sug3: string | undefined = 'เลือก 2–3 ช่องทางที่ครอบคลุมทั้งบ้านที่มีไลน์และบ้านที่ไม่มีไลน์/ผู้สูงอายุ';
+    const hasFastOrTargeted = /(line|ไลน์|ศูนย์พัฒนาเด็กเล็ก)/i.test(channels);
+    const hasNoLineReach = /(หอกระจายข่าว|โทร|ครูประจำชั้น|ผู้ใหญ่บ้าน)/i.test(channels);
+
+    if (!isDup && this.isMeaningfulText(channels, 20)) {
+      if (hasFastOrTargeted && hasNoLineReach) {
+        s3 = 3;
+        c3 = 'เลือก 2–3 ช่องทางได้ตรงกับผู้รับหลักและรอง เหมาะกับความเร่งด่วน และครอบคลุมครัวเรือนที่ไม่มีไลน์';
+        sug3 = undefined;
+      } else if (hasFastOrTargeted || hasNoLineReach) {
+        s3 = 2;
+        c3 = 'ช่องทางเหมาะสมบางส่วน แต่อาจยังขาดการเข้าถึงผู้รับบางกลุ่ม (เช่น บ้านที่ไม่มีไลน์ หรือกลุ่มนอกหมู่บ้าน)';
+      }
+    }
+
+    // 4. r1_reason_event: เหตุผลและการตอบสนองต่อข้อมูลใหม่ (เต็ม 2)
+    let s4 = 0;
+    let c4 = 'ยังไม่ได้ระบุเหตุผลของช่องทางที่อ้างอิงข้อมูลผู้รับ หรือยังไม่ได้ตอบเหตุการณ์แทรก';
+    let sug4: string | undefined = 'ระบุเหตุผลทุกช่องโดยอ้างข้อมูลจากตารางช่องทาง และตอบเหตุการณ์แทรกไม่เกิน 2 ประโยคโดยไม่ขัดกับแผน';
 
     if (!isDup && this.isMeaningfulText(channels, 25)) {
-      if (hasOnline && hasCommunity && channels.length >= 30) {
-        s2 = 4;
-        c2 = 'ยอดเยี่ยม! ผสมผสานทั้งช่องทางดิจิทัลที่รวดเร็ว และช่องทางชุมชนสำหรับครอบครัวที่เข้าไม่ถึงอินเทอร์เน็ต';
-        sug2 = undefined;
-      } else if (hasOnline || hasCommunity) {
-        s2 = 2;
-        c2 = 'เลือกช่องทางได้ดีแต่พึ่งพาช่องทางดิจิทัลหรือชุมชนเพียงด้านเดียว อาจตกหล่นผู้รับสารบางกลุ่ม';
-        sug2 = 'เพิ่มช่องทางสำรองสำหรับกลุ่มที่ไม่มีสมาร์ทโฟน เช่น ประสานผู้ใหญ่บ้านหรือหอกระจายข่าว';
+      if (this.isMeaningfulText(injectedReply, 12)) {
+        s4 = 2;
+        c4 = 'เหตุผลทุกช่องอ้างอิงข้อมูลผู้รับสารชัดเจน และตอบเหตุการณ์แทรกได้สอดคล้องโดยไม่ขัดกับแผนเดิม';
+        sug4 = undefined;
+      } else {
+        s4 = 1;
+        c4 = 'มีเหตุผลประกอบช่องทาง แต่คำตอบเหตุการณ์แทรกยังสั้นเกินไปหรือยังไม่สมบูรณ์';
       }
-    }
-
-    // 3. r1_feasibility (เต็ม 3)
-    let s3 = 1;
-    let c3 = 'ข้อมูลผู้รับสารหลัก/รอง หรือเหตุผลประกอบช่องทางยังไม่ครบถ้วน';
-    let sug3: string | undefined = 'ระบุทั้งผู้รับสารหลัก ผู้รับสารรอง และอธิบายเหตุผลของช่องทางที่เลือกให้ครบถ้วน';
-    if (!isDup && this.isMeaningfulText(channels, 30) && this.isMeaningfulText(mainAud, 8) && this.isMeaningfulText(subAud, 8)) {
-      s3 = 3;
-      c3 = 'สอดคล้องกับบริบทโรงเรียนขนาดเล็ก ระบุผู้รับสารหลัก-รองและช่องทางที่ปฏิบัติได้จริง';
-      sug3 = undefined;
-    } else if (!isDup && this.isMeaningfulText(channels, 20) && (this.isMeaningfulText(mainAud, 6) || this.isMeaningfulText(subAud, 6))) {
-      s3 = 2;
-      c3 = 'ปฏิบัติได้จริง แต่อาจต้องเพิ่มรายละเอียดของผู้รับสารรองหรือเหตุผลประกอบ';
-      sug3 = 'เขียนอธิบายบทบาทของผู้รับสารรองและเหตุผลของช่องทางให้ชัดเจนขึ้น';
     }
 
     return this.buildResult('1.1', [
-      { id: 'r1_goal', title: 'ความชัดเจนของเป้าหมายและข้อความหลัก', score: s1, max: 3, comment: c1, sug: sug1 },
-      { id: 'r1_channel', title: 'ความเหมาะสมของช่องทางกับผู้รับสาร', score: s2, max: 4, comment: c2, sug: sug2 },
-      { id: 'r1_feasibility', title: 'ความเป็นไปได้ในการปฏิบัติจริง', score: s3, max: 3, comment: c3, sug: sug3 }
+      { id: 'r1_goal', title: '1. เป้าหมายและผู้รับสาร', score: s1, max: 2, comment: c1, sug: sug1 },
+      { id: 'r1_message', title: '2. ข้อความหลัก', score: s2, max: 3, comment: c2, sug: sug2 },
+      { id: 'r1_channel', title: '3. ความเหมาะสมของช่องทาง', score: s3, max: 3, comment: c3, sug: sug3 },
+      { id: 'r1_reason_event', title: '4. เหตุผลและการตอบสนองต่อข้อมูลใหม่', score: s4, max: 2, comment: c4, sug: sug4 }
     ], data);
   }
 
