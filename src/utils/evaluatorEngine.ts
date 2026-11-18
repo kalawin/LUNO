@@ -404,658 +404,748 @@ export class EvaluatorEngine {
   }
 
   // --------------------------------------------------------------------------
-  // หน่วย 1.2: การสร้างเครือข่ายพันธมิตร 4 ทิศทาง
-  // เกณฑ์ตรงกับ UNITS_DATA['1.2'].rubric: r2_network (3), r2_twoway (4), r2_impact (3)
+  // หน่วย 1.2: การสร้างเครือข่ายพันธมิตร (4 เกณฑ์: 2 / 2 / 4 / 2 คะแนน = เต็ม 10)
   // --------------------------------------------------------------------------
   private static eval1_2(data: Record<string, any>): UnitEvaluationResult {
-    const internal = (data['เครือข่ายภายในโรงเรียน'] || '').trim();
-    const parents = (data['เครือข่ายผู้ปกครอง'] || '').trim();
-    const community = (data['เครือข่ายชุมชนและท้องถิ่น'] || '').trim();
-    const external = (data['เครือข่ายภายนอก'] || '').trim();
-    const inquiry = (data['ข้อกังวลจากพันธมิตร'] || '').trim();
-    const response = (data['ข้อความตอบกลับของผู้บริหาร'] || '').trim();
+    const g1 = (data['ผังกลุ่ม1_ครูและบุคลากร'] || data['เครือข่ายภายในโรงเรียน'] || '').trim();
+    const g2 = (data['ผังกลุ่ม2_ผู้ปกครอง'] || data['เครือข่ายผู้ปกครอง'] || '').trim();
+    const g3 = (data['ผังกลุ่ม3_ชุมชนและอปท'] || data['เครือข่ายชุมชนและท้องถิ่น'] || '').trim();
+    const g4 = (data['ผังกลุ่ม4_หน่วยงานภายนอก'] || data['เครือข่ายภายนอก'] || '').trim();
+    const selectedGroup = (data['กลุ่มที่เลือกพัฒนา'] || '').trim();
+    const reason = (data['เหตุผลที่เลือกกลุ่มนี้_อ้างหลักฐานจากผัง'] || data['ข้อกังวลจากพันธมิตร'] || '').trim();
+    const chatReply = (data['คำตอบเหตุการณ์แทรก'] || data['ข้อความตอบกลับของผู้บริหาร'] || '').trim();
+    const plan = (data['แผนเปิดช่องทางสองทาง_1ข้อ'] || '').trim();
 
-    const isNetDup = this.hasDuplicateAnswers([internal, parents, community, external]);
+    const isNetDup = this.hasDuplicateAnswers([g1, g2, g3, g4]);
+    const validNets = [g1, g2, g3, g4].filter(t => this.isMeaningfulText(t, 12)).length;
 
-    // 1. r2_network (เต็ม 3)
-    let s1 = 1;
-    const validNets = [internal, parents, community, external].filter(t => this.isMeaningfulText(t, 8)).length;
-    if (!isNetDup && validNets === 4) s1 = 3;
-    else if (!isNetDup && validNets >= 2) s1 = 2;
+    // 1. r1_2_1: ผังเครือข่าย (เต็ม 2)
+    let s1 = 0;
+    if (!isNetDup && validNets === 4) s1 = 2;
+    else if (!isNetDup && validNets >= 2) s1 = 1;
 
-    const c1 = s1 === 3
-      ? 'ระบุพันธมิตรและช่องทางดิจิทัลครบทั้ง 4 ทิศทาง สอดคล้องกับบริบทจริงของโรงเรียนขนาดเล็ก'
-      : isNetDup
-      ? 'พบการกรอกข้อมูลเครือข่ายซ้ำกัน กรุณาระบุพันธมิตรแต่ละทิศทางให้แตกต่างกันตามจริง'
-      : `ระบุเครือข่ายที่มีความหมายได้ ${validNets}/4 ทิศทาง ควรระบุให้ครบทั้ง 4 ทิศทาง`;
-    const sug1 = s1 < 3 ? 'เติมข้อมูลกลุ่มพันธมิตรพร้อมช่องทางสื่อสารให้ครบทั้งภายใน, ผู้ปกครอง, ชุมชน และภายนอก' : undefined;
-
-    // 2. r2_twoway (เต็ม 4)
-    let s2 = 1;
-    const isPolite = /(ครับ|ค่ะ|ขอขอบคุณ|ขอบคุณ|ยินดี|เคารพ|ขอเรียน|ชี้แจง|ห่วงใย)/i.test(response);
-    const isSolutionOriented = /(แผน|พัฒนา|ร่วมมือ|เชิญ|พร้อม|ปรับปรุง|แก้ไข|หารือ|ประชุม|ดูแล|คุณภาพ)/i.test(response);
-    const isRespDup = this.hasDuplicateAnswers([inquiry, response]);
-
-    if (!isRespDup && this.isMeaningfulText(response, 35) && isPolite && isSolutionOriented) {
-      s2 = 4;
-    } else if (!isRespDup && this.isMeaningfulText(response, 20) && (isPolite || isSolutionOriented)) {
+    // 2. r1_2_2: การเลือกกลุ่มที่จะพัฒนา (เต็ม 2)
+    let s2 = 0;
+    if (this.isMeaningfulText(reason, 18) && (selectedGroup.length >= 2 || /(ทางเดียว|ครั้ง|ถาม|ตอบ|ช่องทาง|ผู้ปกครอง|ชุมชน|ครู|รพ)/i.test(reason))) {
       s2 = 2;
+    } else if (this.isMeaningfulText(reason, 10)) {
+      s2 = 1;
     }
 
-    const c2 = s2 === 4
-      ? 'ตอบสนองด้วยน้ำเสียงที่สุภาพ ให้เกียรติ ชี้แจงข้อเท็จจริง และเปิดโอกาสให้ร่วมมือแก้ปัญหา'
-      : 'ข้อความตอบกลับยังสั้นเกินไป ขาดความสุภาพเชิงบวก หรือยังไม่ได้เชิญชวนพันธมิตรร่วมหาทางออก';
-    const sug2 = s2 < 4 ? 'เขียนตอบกลับโดยกล่าวขอบคุณในความห่วงใย ชี้แจงแนวทางพัฒนา และเชิญชวนร่วมพูดคุยหารือ' : undefined;
-
-    // 3. r2_impact (เต็ม 3)
+    // 3. r1_2_3: การตอบกลับแบบสองทางในสถานการณ์จำลอง (เต็ม 4)
     let s3 = 1;
-    if (!isRespDup && this.isMeaningfulText(inquiry, 15) && this.isMeaningfulText(response, 35) && isSolutionOriented) {
+    const isPolite = /(ครับ|ค่ะ|ขอบคุณ|ขออภัย|ขอโทษ|ยินดี|รับทราบ)/i.test(chatReply);
+    const hasTimeOrAction = /(เวลา|ภายใน|วันนี้|พรุ่งนี้|สัปดาห์|วัน|โมง|น\.|ประสาน|แจ้ง|ส่ง|ประชุม|ส่วนตัว)/i.test(chatReply);
+    if (this.isMeaningfulText(chatReply, 40) && isPolite && hasTimeOrAction) {
+      s3 = 4;
+    } else if (this.isMeaningfulText(chatReply, 22) && (isPolite || hasTimeOrAction)) {
       s3 = 3;
-    } else if (this.isMeaningfulText(inquiry, 10) && this.isMeaningfulText(response, 20)) {
+    } else if (this.isMeaningfulText(chatReply, 12)) {
       s3 = 2;
     }
-    const c3 = s3 === 3
-      ? 'สร้างความเข้าใจอันดีและเปลี่ยนข้อกังวลให้เป็นพลังความร่วมมือที่ยั่งยืน'
-      : 'ควรระบุประเด็นข้อกังวลและแนวทางการดึงพันธมิตรเข้ามามีส่วนร่วมพัฒนาโรงเรียนให้ชัดเจนขึ้น';
-    const sug3 = s3 < 3 ? 'ระบุสถานการณ์คำถามจากชุมชน และต่อยอดสู่กิจกรรมความร่วมมือที่เป็นรูปธรรม' : undefined;
+
+    // 4. r1_2_4: แผนเปิดช่องทางสองทาง (เต็ม 2)
+    let s4 = 0;
+    if (this.isMeaningfulText(plan, 20) && /(line|ไลน์|เพจ|ประชุม|โพล|ฟอร์ม|สัปดาห์|เดือน|ครู|ผอ)/i.test(plan)) {
+      s4 = 2;
+    } else if (this.isMeaningfulText(plan, 10) || (s1 === 2 && s3 >= 3)) {
+      s4 = 1;
+    }
 
     return this.buildResult('1.2', [
-      { id: 'r2_network', title: 'ความครอบคลุมของเครือข่ายพันธมิตร 4 ทิศทาง', score: s1, max: 3, comment: c1, sug: sug1 },
-      { id: 'r2_twoway', title: 'คุณภาพของการสื่อสารสองทาง (Two-Way Communication)', score: s2, max: 4, comment: c2, sug: sug2 },
-      { id: 'r2_impact', title: 'การนำไปใช้ประโยชน์เพื่อพัฒนาโรงเรียน', score: s3, max: 3, comment: c3, sug: sug3 }
+      {
+        id: 'r1_2_1',
+        title: '1. ผังเครือข่าย',
+        score: s1,
+        max: 2,
+        comment: s1 === 2 ? 'ระบุผังเครือข่ายครบ 4 กลุ่ม พร้อมช่องทาง ทิศทางที่มีหลักฐาน และสิ่งที่ร่วมมือกันได้สองฝ่าย' : 'ควรระบุผังเครือข่ายให้ครบทั้ง 4 กลุ่ม พร้อมหลักฐานทิศทางและสิ่งที่เขาให้–เราให้',
+        sug: s1 < 2 ? 'กรอกข้อมูลทั้ง 4 กลุ่มโดยใช้บทบาทผู้ติดต่อ ช่องทางจริง หลักฐานทิศทาง และความร่วมมือสองฝ่าย' : undefined
+      },
+      {
+        id: 'r1_2_2',
+        title: '2. การเลือกกลุ่มที่จะพัฒนา',
+        score: s2,
+        max: 2,
+        comment: s2 === 2 ? 'เลือกกลุ่มที่ต้องพัฒนาโดยอ้างอิงหลักฐานจากผังและเชื่อมโยงกับปัญหาโรงเรียนชัดเจน' : 'ควรระบุเหตุผลการเลือกกลุ่มโดยอ้างหลักฐานจากผังเครือข่าย',
+        sug: s2 < 2 ? 'อ้างอิงข้อมูลจากผังว่าเหตุใดกลุ่มนี้จึงเป็นการสื่อสารทางเดียวและกระทบต่อเรื่องใดของโรงเรียน' : undefined
+      },
+      {
+        id: 'r1_2_3',
+        title: '3. การตอบกลับแบบสองทางในสถานการณ์จำลอง',
+        score: s3,
+        max: 4,
+        comment: s3 === 4 ? 'ตอบกลับครบทั้ง 3 ข้อความตามหลักสองทาง (รับรู้ ตอบตรงประเด็น บอกสิ่งที่จะทำพร้อมเวลา และคุ้มครอง PDPA)' : 'ควรระบุสิ่งที่จะทำต่อพร้อมเวลาและเปิดโอกาสให้อีกฝ่ายตอบกลับให้ครบทั้ง 3 ข้อความ',
+        sug: s3 < 4 ? 'ตรวจสอบว่าคำตอบมีครบ 4 องค์ประกอบ: รับรู้ ตอบตรงประเด็น สิ่งที่จะทำพร้อมเวลา และย้ายเรื่องส่วนบุคคลไปช่องทางส่วนตัว' : undefined
+      },
+      {
+        id: 'r1_2_4',
+        title: '4. แผนเปิดช่องทางสองทาง',
+        score: s4,
+        max: 2,
+        comment: s4 === 2 ? 'ระบุแผนเปิดช่องทางสองทางครบทั้ง ทำอะไร ช่องทาง เมื่อไร และผู้รับผิดชอบ' : 'ควรระบุแผนเปิดช่องทางสองทางให้ครบทั้ง 4 ส่วน (ทำอะไร ช่องทางใด เริ่มเมื่อไร ใครรับผิดชอบ)',
+        sug: s4 < 2 ? 'เขียนแผนเปิดช่องทางสองทาง 1 ข้อที่ทำได้จริงในโรงเรียนขนาดเล็ก' : undefined
+      }
     ], data);
   }
 
   // --------------------------------------------------------------------------
-  // หน่วย 1.3: ภาพลักษณ์ สื่อปลอดภัย และ PDPA
-  // เกณฑ์ตรงกับ UNITS_DATA['1.3'].rubric: r3_quality (3), r3_pdpa (4), r3_channel (3)
+  // หน่วย 1.3: การสื่อสารภาพลักษณ์ผ่านสื่อ (4 เกณฑ์: 3 / 2 / 3 / 2 คะแนน = เต็ม 10)
   // --------------------------------------------------------------------------
   private static eval1_3(data: Record<string, any>): UnitEvaluationResult {
-    const checks = [
-      data['ตรวจ_ไม่ระบุเลขบัตรประชาชน_ที่อยู่'],
-      data['ตรวจ_เบลอชื่อเด็กหรือใช้ชื่อเล่น'],
-      data['ตรวจ_มีหนังสือยินยอมจากผู้ปกครอง'],
-      data['ตรวจ_ใช้ภาพถ่ายโรงเรียนหรือภาพฟรีลิขสิทธิ์'],
-      data['ตรวจ_มีข้อความคุ้มครองข้อมูลส่วนบุคคล']
-    ];
-    const checkedCount = checks.filter(Boolean).length;
-    const title = (data['หัวข้อประชาสัมพันธ์'] || '').trim();
-    const highlight = (data['จุดเด่นที่ต้องการสื่อสาร'] || '').trim();
-    const consent = (data['ข้อความขอความยินยอม'] || '').trim();
+    const topicTarget = (data['กิจกรรมและกลุ่มเป้าหมาย'] || data['หัวข้อประชาสัมพันธ์'] || '').trim();
+    const msg4 = (data['ข้อความหลัก4ส่วน_ใคร_ทำอะไร_ผลต่อผู้เรียน_คำเชิญชวน'] || data['จุดเด่นที่ต้องการสื่อสาร'] || '').trim();
+    const pdpaTable = (data['ตารางตรวจความยินยอม_PDPA'] || data['ข้อความขอความยินยอม'] || '').trim();
+    const copyrightTable = (data['ตารางแหล่งที่มาและสัญญาอนุญาต'] || '').trim();
+    const formatCredit = (data['รูปแบบชิ้นงานและบรรทัดเครดิต'] || '').trim();
+    const injectedReply = (data['คำตอบเหตุการณ์แทรก'] || '').trim();
 
-    const isDup = this.hasDuplicateAnswers([title, highlight, consent]);
+    const isDup = this.hasDuplicateAnswers([msg4, pdpaTable, copyrightTable]);
 
-    // 1. r3_quality (เต็ม 3)
+    // 1. r1_3_1: ข้อความหลักและกลุ่มเป้าหมาย (เต็ม 3)
+    const hasNumberOrResult = /[0-9๑-๙]+|(กิโลกรัม|เล่ม|คน|ร้อยละ|%|ชิ้น|คาบ|วัน|บาท)/i.test(msg4);
     let s1 = 1;
-    if (!isDup && this.isMeaningfulText(title, 10) && this.isMeaningfulText(highlight, 25)) {
+    if (!isDup && this.isMeaningfulText(topicTarget, 8) && this.isMeaningfulText(msg4, 25) && hasNumberOrResult) {
       s1 = 3;
-    } else if (!isDup && this.isMeaningfulText(title, 8) && this.isMeaningfulText(highlight, 12)) {
+    } else if (!isDup && this.isMeaningfulText(msg4, 15)) {
       s1 = 2;
     }
 
-    // 2. r3_pdpa (เต็ม 4)
-    let s2 = checkedCount === 5 ? 4 : checkedCount >= 3 ? 2 : 1;
+    // 2. r1_3_2: คุณภาพการนำเสนอ (เต็ม 2)
+    let s2 = 0;
+    if (!isDup && this.isMeaningfulText(formatCredit, 12) && this.isMeaningfulText(msg4, 15)) {
+      s2 = 2;
+    } else if (this.isMeaningfulText(formatCredit, 6) || this.isMeaningfulText(topicTarget, 8)) {
+      s2 = 1;
+    }
 
-    // 3. r3_channel (เต็ม 3) - ความเหมาะสมของช่องทางเผยแพร่และข้อความขอความยินยอม
-    const hasConsentKeyword = /(ยินยอม|อนุญาต|pdpa|คุ้มครองข้อมูล|พระราชบัญญัติ|ผู้ปกครอง|เผยแพร่|ภาพ)/i.test(consent);
+    // 3. r1_3_3: การคุ้มครองข้อมูลส่วนบุคคล (เต็ม 3)
     let s3 = 1;
-    if (!isDup && this.isMeaningfulText(consent, 25) && hasConsentKeyword) {
+    const hasPdpaCare = /(ยินยอม|ด้านหลัง|ไม่เห็นหน้า|ระบุตัวไม่ได้|เบลอ|ลบ|เพจ)/i.test(pdpaTable + ' ' + injectedReply);
+    if (!isDup && this.isMeaningfulText(pdpaTable, 15) && this.isMeaningfulText(injectedReply, 15) && hasPdpaCare) {
       s3 = 3;
-    } else if (!isDup && this.isMeaningfulText(consent, 15)) {
+    } else if (!isDup && this.isMeaningfulText(pdpaTable, 12)) {
       s3 = 2;
+    }
+
+    // 4. r1_3_4: ลิขสิทธิ์และแหล่งที่มา (เต็ม 2)
+    let s4 = 0;
+    const hasUnknownSource = /ไม่ทราบที่มา|ค้นจากกูเกิลทั่วไป/i.test(copyrightTable);
+    if (!isDup && !hasUnknownSource && this.isMeaningfulText(copyrightTable, 15)) {
+      s4 = 2;
+    } else if (this.isMeaningfulText(copyrightTable, 8) || s3 >= 2) {
+      s4 = 1;
     }
 
     return this.buildResult('1.3', [
       {
-        id: 'r3_quality',
-        title: 'ความน่าสนใจและคุณค่าของสาระประชาสัมพันธ์',
+        id: 'r1_3_1',
+        title: '1. ข้อความหลักและกลุ่มเป้าหมาย',
         score: s1,
         max: 3,
-        comment: s1 === 3 ? 'หัวข้อและจุดเด่นน่าสนใจ สื่อสารเรื่องราวเชิงบวก (Storytelling) ของโรงเรียนได้ชัดเจน' : 'ควรขยายความจุดเด่นและเรื่องราวความสำเร็จของโรงเรียนให้ชัดเจนยิ่งขึ้น',
-        sug: s1 < 3 ? 'เขียนหัวข้อและจุดเด่นของกิจกรรมที่สะท้อนพัฒนาการของนักเรียนอย่างน้อย 2-3 ประโยค' : undefined
+        comment: s1 === 3 ? 'ข้อความหลักครบ 4 ส่วน (ใคร ทำอะไร ผลที่เกิดกับผู้เรียน คำเชิญชวน) มีตัวเลข/ผลจริง และตรงกลุ่มเป้าหมาย' : 'ควรระบุข้อความหลักให้ครบ 4 ส่วน พร้อมตัวเลขผลลัพธ์ที่เกิดกับผู้เรียนและคำเชิญชวน',
+        sug: s1 < 3 ? 'ระบุให้ครบว่า ใคร ทำอะไร เกิดผลต่อผู้เรียนอย่างไร (มีตัวเลข) และเชิญชวนกลุ่มเป้าหมายทำอะไร' : undefined
       },
       {
-        id: 'r3_pdpa',
-        title: 'ความถูกต้องตามหลัก PDPA และลิขสิทธิ์',
+        id: 'r1_3_2',
+        title: '2. คุณภาพการนำเสนอ',
         score: s2,
-        max: 4,
-        comment: s2 === 4 ? 'ผ่านเกณฑ์ Checklist PDPA และลิขสิทธิ์สื่อครบถ้วนทั้ง 5 ข้อ' : `ตรวจสอบผ่านเพียง ${checkedCount}/5 ข้อ ควรตรวจสอบความปลอดภัยข้อมูลเด็กให้ครบทุกข้อ`,
-        sug: s2 < 4 ? 'คลิกตรวจสอบรายการ Checklist มาตรฐาน PDPA และลิขสิทธิ์สื่อให้ครบทั้ง 5 ข้อ' : undefined
+        max: 2,
+        comment: s2 === 2 ? 'ลำดับเนื้อหาอ่านง่าย ตัวเลขตรงกัน และระบุบรรทัดเครดิตท้ายชิ้นงานชัดเจน' : 'ควรระบุรูปแบบชิ้นงานและบรรทัดเครดิตท้ายชิ้นงานให้ตรงกับตารางแหล่งที่มา',
+        sug: s2 < 2 ? 'เติมรูปแบบชิ้นงานและบรรทัดเครดิตท้ายโปสเตอร์/คลิปให้ครบถ้วน' : undefined
       },
       {
-        id: 'r3_channel',
-        title: 'ความเหมาะสมของช่องทางเผยแพร่',
+        id: 'r1_3_3',
+        title: '3. การคุ้มครองข้อมูลส่วนบุคคล (PDPA)',
         score: s3,
         max: 3,
-        comment: s3 === 3 ? 'ร่างข้อความขอความยินยอมและแนวทางเผยแพร่ได้ถูกต้องตามหลักกฎหมาย PDPA' : 'ข้อความขอความยินยอมผู้ปกครองยังสั้นเกินไปหรือขาดการอ้างอิงวัตถุประสงค์ตามหลัก PDPA',
-        sug: s3 < 3 ? 'ระบุวัตถุประสงค์การนำภาพไปเผยแพร่ประชาสัมพันธ์และสิทธิของผู้ปกครองตาม พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล' : undefined
+        comment: s3 === 3 ? 'ตารางตรวจความยินยอมครบถ้วน และตอบเหตุการณ์แทรกครบทั้งการแก้ชิ้นงานใหม่และการลบโพสต์เดิมในเพจ' : 'ควรกรอกตารางความยินยอมและตอบเหตุการณ์แทรกให้ครบทั้งชิ้นงานใหม่และโพสต์เดิมในเพจ',
+        sug: s3 < 3 ? 'ระบุการตรวจสอบความยินยอมผู้ปกครอง และเมื่อถอนความยินยอมต้องลบทั้งในสื่อใหม่และโพสต์เดิมในเพจ' : undefined
+      },
+      {
+        id: 'r1_3_4',
+        title: '4. ลิขสิทธิ์และแหล่งที่มา',
+        score: s4,
+        max: 2,
+        comment: s4 === 2 ? 'สื่อทุกชิ้นระบุที่มา สัญญาอนุญาต และเครดิตได้อย่างถูกต้อง' : 'ควรระบุตารางแหล่งที่มาและสัญญาอนุญาตของสื่อทุกชิ้นให้ชัดเจน',
+        sug: s4 < 2 ? 'ระบุที่มาของภาพ/ไอคอน/เพลง (เช่น ถ่ายเอง, คลัง Canva, CC0, CC BY) และเครดิต' : undefined
       }
     ], data);
   }
 
   // --------------------------------------------------------------------------
-  // หน่วย 2.1: การจัดการเรียนการสอนด้วยเทคโนโลยีดิจิทัล (การโค้ชครู 3 ครั้ง)
-  // เกณฑ์ตรงกับ UNITS_DATA['2.1'].rubric: r4_tool (4), r4_plan (4), r4_role (2)
+  // หน่วย 2.1: การจัดการเรียนการสอนด้วยเทคโนโลยีดิจิทัล (4 เกณฑ์: 3 / 3 / 2 / 2 = เต็ม 10)
   // --------------------------------------------------------------------------
   private static eval2_1(data: Record<string, any>): UnitEvaluationResult {
-    const teacher = (data['ครูเป้าหมายและปัญหา'] || '').trim();
-    const tool = (data['เครื่องมือดิจิทัลที่เลือก'] || '').trim();
-    const s1Text = (data['โค้ชครั้งที่1_ชวนคุยสาธิต'] || '').trim();
-    const s2Text = (data['โค้ชครั้งที่2_ร่วมออกแบบ'] || '').trim();
-    const s3Text = (data['โค้ชครั้งที่3_สังเกตชื่นชม'] || '').trim();
-    const support = (data['การหนุนเสริมของผู้บริหาร'] || '').trim();
+    const teacher = (data['รหัสครู_วิชา_ชั้น_อุปกรณ์และเน็ตที่ใช้ได้จริง'] || data['ครูเป้าหมายและปัญหา'] || '').trim();
+    const tool = (data['เครื่องมือที่เลือกและเหตุผล2ข้อ'] || data['เครื่องมือดิจิทัลที่เลือก'] || '').trim();
+    const plan3 = (
+      data['แผนโค้ช3ครั้ง_วัตถุประสงค์_ครูทำ_ผอสนับสนุน_เวลา'] ||
+      `${data['โค้ชครั้งที่1_ชวนคุยสาธิต'] || ''} ${data['โค้ชครั้งที่2_ร่วมออกแบบ'] || ''} ${data['โค้ชครั้งที่3_สังเกตชื่นชม'] || ''}`
+    ).trim();
+    const kpi = (data['ตัวชี้วัดความสำเร็จ_เวลา_พฤติกรรม_จำนวน_หลักฐาน'] || data['การหนุนเสริมของผู้บริหาร'] || '').trim();
+    const openQs = (data['คำถามเปิด3ข้อ_สำหรับการโค้ชครั้งที่3'] || '').trim();
+    const injectedReply = (data['คำตอบเหตุการณ์แทรก'] || '').trim();
 
-    // 1. r4_tool (เต็ม 4): ความเหมาะสมของเครื่องมือกับบริบทครูและวิชา
-    const hasTeacherProblem = /(ครู|สอน|วิชา|ชั้น|ป\.|อนุบาล|นักเรียน|อ่าน|เขียน|สื่อ|เวลา|ควบ|ภาระ|ไม่คล่อง|กังวล)/i.test(teacher);
-    const hasValidTool = /(canva|dltv|google|youtube|quizizz|kahoot|wordwall|padlet|powerpoint|คลิป|เกม|สื่อ|ใบงาน|ออนไลน์|แอป|เว็บไซต์|oer|คลัง|ฟอร์ม|เพจ)/i.test(tool);
-    const isToolDup = this.hasDuplicateAnswers([teacher, tool]);
+    const isDup = this.hasDuplicateAnswers([teacher, tool, plan3, kpi]);
 
+    // 1. r2_1_1: การวิเคราะห์ครูและเลือกเครื่องมือ (เต็ม 3)
     let sc1 = 1;
-    let c1 = 'ข้อมูลครูเป้าหมายหรือเครื่องมือดิจิทัลที่เลือกยังไม่สอดคล้องกับปัญหาการจัดการเรียนรู้';
-    let sug1: string | undefined = 'ระบุชื่อ/ระดับชั้นของครู สภาพปัญหาในการสอน และระบุชื่อเครื่องมือดิจิทัล (เช่น DLTV, Canva, Quizizz) พร้อมเหตุผลที่ช่วยลดภาระครู';
-
-    if (!isToolDup && this.isMeaningfulText(teacher, 15) && this.isMeaningfulText(tool, 15) && hasTeacherProblem && hasValidTool) {
-      sc1 = 4;
-      c1 = 'ระบุครูเป้าหมาย สภาพปัญหา และจับคู่เครื่องมือดิจิทัลที่ช่วยแก้ปัญหาและลดภาระงานสอนได้อย่างเหมาะสม';
-      sug1 = undefined;
-    } else if (!isToolDup && this.isMeaningfulText(teacher, 10) && this.isMeaningfulText(tool, 10) && (hasTeacherProblem || hasValidTool)) {
+    if (!isDup && this.isMeaningfulText(teacher, 20) && this.isMeaningfulText(tool, 20)) {
+      sc1 = 3;
+    } else if (!isDup && (this.isMeaningfulText(teacher, 12) || this.isMeaningfulText(tool, 12))) {
       sc1 = 2;
-      c1 = 'ระบุครูและเครื่องมือได้เบื้องต้น แต่ยังขาดรายละเอียดปัญหาการสอนหรือเหตุผลความเหมาะสมของเครื่องมือ';
-      sug1 = 'อธิบายเพิ่มเติมว่าเครื่องมือที่เลือกช่วยแก้ปัญหาการสอนของครูท่านนี้ได้อย่างไร';
     }
 
-    // 2. r4_plan (เต็ม 4): ความเป็นไปได้ของแผนโค้ช 3 ครั้ง
-    const isStepsDup = this.hasDuplicateAnswers([s1Text, s2Text, s3Text]);
-    const hasCoachingKeywords1 = /(คุย|สาธิต|แนะนำ|ชวน|ดู|ตัวอย่าง|ทดลอง|ฟัง|ปัญหา)/i.test(s1Text);
-    const hasCoachingKeywords2 = /(ออกแบบ|ร่วม|ช่วย|ทำ|แผน|คาบ|สร้าง|เตรียม|จับมือ|ลอง)/i.test(s2Text);
-    const hasCoachingKeywords3 = /(สังเกต|ชม|ชื่นชม|กำลังใจ|สะท้อน|เยี่ยมชั้นเรียน|ดูเด็ก|สอนจริง|ฟีดแบ็ก)/i.test(s3Text);
-
+    // 2. r2_1_2: แผนโค้ช 3 ครั้ง (เต็ม 3)
     let sc2 = 1;
-    let c2 = 'แผนการโค้ชทั้ง 3 ครั้งยังไม่ครบถ้วน หรือเนื้อหาไม่สอดคล้องกับกระบวนการโค้ชชิ่ง';
-    let sug2: string | undefined = 'เขียนแผนโค้ชให้ครบทั้ง 3 ครั้งโดยไม่ซ้ำกัน: ครั้งที่ 1 (ชวนคุย-สาธิต), ครั้งที่ 2 (นั่งข้างๆ ร่วมออกแบบ 1 คาบ), ครั้งที่ 3 (สังเกตชั้นเรียนและชื่นชม)';
-
-    if (isStepsDup) {
-      sc2 = 1;
-      c2 = 'พบการกรอกข้อความซ้ำกันในแผนการโค้ชแต่ละครั้ง กรุณาระบุกิจกรรมของการโค้ชทั้ง 3 ครั้งให้แตกต่างกันตามลำดับขั้นตอน';
-    } else if (
-      this.isMeaningfulText(s1Text, 15) &&
-      this.isMeaningfulText(s2Text, 15) &&
-      this.isMeaningfulText(s3Text, 15) &&
-      hasCoachingKeywords1 &&
-      hasCoachingKeywords2 &&
-      hasCoachingKeywords3
-    ) {
-      sc2 = 4;
-      c2 = 'วางแผนการโค้ชครบทั้ง 3 ครั้งอย่างเป็นลำดับขั้นตอน (ชวนคุยสาธิต -> ร่วมออกแบบ -> สังเกตและชื่นชม) โดยไม่กดดันครู';
-      sug2 = undefined;
-    } else if (
-      this.isMeaningfulText(s1Text, 12) &&
-      this.isMeaningfulText(s2Text, 12) &&
-      this.isMeaningfulText(s3Text, 12)
-    ) {
+    if (!isDup && this.isMeaningfulText(plan3, 35) && /(ครั้งที่\s*1|สัปดาห์|คาบ|ลอง|สะท้อน)/i.test(plan3)) {
+      sc2 = 3;
+    } else if (!isDup && this.isMeaningfulText(plan3, 20)) {
       sc2 = 2;
-      c2 = 'กรอกแผนครบ 3 ครั้งแล้ว แต่บางขั้นตอนยังขาดรายละเอียดเชิงปฏิบัติตามหลักการโค้ช (สาธิต, ร่วมทำ, ชื่นชม)';
     }
 
-    // 3. r4_role (เต็ม 2): ความชัดเจนของบทบาทผู้บริหาร
-    const hasSupportKeywords = /(สนับสนุน|หนุน|เวลา|อุปกรณ์|อินเทอร์เน็ต|เน็ต|ไวไฟ|กำลังใจ|ลดภาระ|พี่เลี้ยง|งบ|ช่วย|จัดหา|ชมเชย|อำนวยความสะดวก)/i.test(support);
+    // 3. r2_1_3: บทบาทโค้ชของผู้บริหาร (เต็ม 2)
+    const hasWhyNot = /ทำไมไม่|ทำไมถึงไม่|ทำไมครูไม่/i.test(openQs);
     let sc3 = 0;
-    let c3 = 'ยังไม่ได้ระบุบทบาทการหนุนเสริมของผู้บริหาร หรือข้อความไม่ชัดเจน';
-    let sug3: string | undefined = 'ระบุให้ชัดเจนว่าผู้บริหารจะสนับสนุนด้านเวลา อุปกรณ์ อินเทอร์เน็ต หรือการเสริมกำลังใจอย่างไรโดยไม่ทำแทนครู';
-
-    if (
-      !this.hasDuplicateAnswers([support, s1Text, s2Text, s3Text]) &&
-      this.isMeaningfulText(support, 15) &&
-      hasSupportKeywords
-    ) {
+    if (!isDup && !hasWhyNot && this.isMeaningfulText(openQs, 18) && this.isMeaningfulText(injectedReply, 15)) {
       sc3 = 2;
-      c3 = 'ระบุบทบาทผู้บริหารในการสนับสนุนทรัพยากร เวลา และกำลังใจได้อย่างชัดเจน';
-      sug3 = undefined;
-    } else if (this.isMeaningfulText(support, 10)) {
+    } else if (!hasWhyNot && (this.isMeaningfulText(openQs, 12) || this.isMeaningfulText(injectedReply, 12) || sc2 === 3)) {
       sc3 = 1;
-      c3 = 'ระบุบทบาทสนับสนุนไว้เบื้องต้น แต่ควรเพิ่มรายละเอียดด้านการจัดสรรเวลาหรือทรัพยากรให้ชัดเจนขึ้น';
+    }
+
+    // 4. r2_1_4: ตัวชี้วัดความสำเร็จ (เต็ม 2)
+    const hasKpiNumber = /[0-9๑-๙]+|(สัปดาห์|เดือน|คาบ|ครั้ง|ดูจาก|บันทึก|รายงาน)/i.test(kpi);
+    let sc4 = 0;
+    if (!isDup && this.isMeaningfulText(kpi, 18) && hasKpiNumber) {
+      sc4 = 2;
+    } else if (this.isMeaningfulText(kpi, 10)) {
+      sc4 = 1;
     }
 
     return this.buildResult('2.1', [
-      { id: 'r4_tool', title: 'ความเหมาะสมของเครื่องมือกับบริบทครูและวิชา', score: sc1, max: 4, comment: c1, sug: sug1 },
-      { id: 'r4_plan', title: 'ความเป็นไปได้ของแผนโค้ช 3 ครั้ง', score: sc2, max: 4, comment: c2, sug: sug2 },
-      { id: 'r4_role', title: 'ความชัดเจนของบทบาทผู้บริหาร', score: sc3, max: 2, comment: c3, sug: sug3 }
-    ], data);
-  }
-
-  // --------------------------------------------------------------------------
-  // หน่วย 2.2: การจัดสภาพแวดล้อมที่เอื้อต่อการเรียนรู้ (Quick Wins 3 อันดับ)
-  // เกณฑ์ตรงกับ UNITS_DATA['2.2'].rubric: r5_eval (3), r5_priority (4), r5_impact (3)
-  // --------------------------------------------------------------------------
-  private static eval2_2(data: Record<string, any>): UnitEvaluationResult {
-    const hw = (data['คะแนนอุปกรณ์ฮาร์ดแวร์'] || '').trim();
-    const net = (data['คะแนนระบบเครือข่าย'] || '').trim();
-    const space = (data['คะแนนแหล่งเรียนรู้'] || '').trim();
-    const q1 = (data['QuickWin_1'] || '').trim();
-    const q2 = (data['QuickWin_2'] || '').trim();
-    const q3 = (data['QuickWin_3'] || '').trim();
-
-    // 1. r5_eval (เต็ม 3): ความตรงจุดของการวิเคราะห์สภาพปัจจุบัน 3 ด้าน
-    const isEvalDup = this.hasDuplicateAnswers([hw, net, space]);
-    const validEvalCount = [hw, net, space].filter(t => this.isMeaningfulText(t, 10)).length;
-    const hasEnvKeywords = /(มี|ขาด|พอใช้|ดี|ปรับปรุง|คอม|ทีวี|โปรเจกเตอร์|เน็ต|wifi|ไวไฟ|สัญญาณ|ห้อง|สายแลน|ปลั๊ก|เครื่อง|dltv|สื่อ|ชำรุด|หลุด)/i.test(hw + net + space);
-
-    let sc1 = 1;
-    let c1 = 'ข้อมูลการประเมินสภาพปัจจุบันทั้ง 3 ด้าน (ฮาร์ดแวร์ เครือข่าย แหล่งเรียนรู้) ยังไม่ครบถ้วนหรือซ้ำกัน';
-    let sug1: string | undefined = 'ประเมินสภาพจริงของโรงเรียนให้ครบทั้ง 3 ด้าน (1. อุปกรณ์ฮาร์ดแวร์, 2. ระบบอินเทอร์เน็ต, 3. แหล่งเรียนรู้) ตามบริบทจริง';
-
-    if (!isEvalDup && validEvalCount === 3 && hasEnvKeywords) {
-      sc1 = 3;
-      c1 = 'ประเมินสภาพแวดล้อมดิจิทัลทั้งด้านฮาร์ดแวร์ เครือข่าย และแหล่งเรียนรู้ได้ตรงตามสภาพจริงของโรงเรียนขนาดเล็ก';
-      sug1 = undefined;
-    } else if (!isEvalDup && validEvalCount >= 2 && hasEnvKeywords) {
-      sc1 = 2;
-      c1 = 'ประเมินสภาพปัจจุบันได้บางส่วน แต่ควรระบุรายละเอียดให้ครบทั้ง 3 ด้าน';
-    }
-
-    // 2. r5_priority (เต็ม 4): ความเป็นไปได้ของแผนพัฒนา 3 ลำดับแรก (Quick Wins)
-    const isQWDup = this.hasDuplicateAnswers([q1, q2, q3]);
-    const validQWCount = [q1, q2, q3].filter(t => this.isMeaningfulText(t, 15)).length;
-    const hasActionKeywords = /(จัด|ตาราง|ซ่อม|ติดตั้ง|ย้าย|เพิ่ม|แชร์|หมุนเวียน|ดาวน์โหลด|ออฟไลน์|สายแลน|เราเตอร์|wifi|ไวไฟ|คอม|ทีวี|ปลั๊ก|ห้อง|ครู|นักเรียน|ทำความสะอาด|ตรวจเช็ค|อบต|ชุมชน)/i.test(q1 + q2 + q3);
-
-    let sc2 = 1;
-    let c2 = 'แผนพัฒนาเร่งด่วน (Quick Wins) ยังไม่ครบ 3 อันดับ หรือมีข้อความซ้ำกัน/ไม่ระบุวิธีการปฏิบัติจริง';
-    let sug2: string | undefined = 'ระบุแผน Quick Wins ให้ครบทั้ง 3 อันดับ โดยแต่ละข้อต้องไม่ซ้ำกัน และระบุสิ่งที่จะลงมือทำจริงได้ทันทีภายใต้งบจำกัด';
-
-    if (isQWDup) {
-      sc2 = 1;
-      c2 = 'พบคำตอบซ้ำกันในรายการ Quick Wins กรุณาระบุแผนพัฒนาทั้ง 3 ลำดับให้แตกต่างกัน';
-    } else if (validQWCount === 3 && hasActionKeywords) {
-      sc2 = 4;
-      c2 = 'แผนพัฒนา Quick Wins ทั้ง 3 ลำดับมีความชัดเจน ปฏิบัติได้จริงทันที และแก้ปัญหาคอขวดได้ตรงจุด';
-      sug2 = undefined;
-    } else if (validQWCount >= 2 && hasActionKeywords) {
-      sc2 = 2;
-      c2 = `ระบุแผน Quick Wins ที่สมบูรณ์ได้ ${validQWCount}/3 ข้อ กรุณาเขียนให้ครบทั้ง 3 ลำดับ`;
-    }
-
-    // 3. r5_impact (เต็ม 3): การบริหารทรัพยากรที่คุ้มค่า
-    let sc3 = 1;
-    let c3 = 'แผนการจัดการทรัพยากรยังไม่สะท้อนความคุ้มค่าหรือยังขาดรายละเอียดผู้รับผิดชอบ/ระยะเวลา';
-    let sug3: string | undefined = 'อธิบายวิธีบริหารจัดการทรัพยากรเดิมให้เกิดประโยชน์สูงสุด (High Impact, Low Cost) พร้อมระบุผู้รับผิดชอบหรือกรอบเวลา';
-
-    if (!isQWDup && validQWCount === 3 && validEvalCount === 3 && (q1 + q2 + q3).length >= 65 && hasActionKeywords) {
-      sc3 = 3;
-      c3 = 'บริหารจัดการทรัพยากรที่มีอยู่ได้อย่างคุ้มค่า คำนึงถึงความยั่งยืนและลดอุปสรรคการเข้าถึงเทคโนโลยีของผู้เรียน';
-      sug3 = undefined;
-    } else if (!isQWDup && validQWCount >= 2 && (q1 + q2 + q3).length >= 40) {
-      sc3 = 2;
-      c3 = 'คำนึงถึงความคุ้มค่าในระดับปานกลาง ควรขยายความวิธีการใช้ทรัพยากรเดิมให้ชัดเจนขึ้น';
-    }
-
-    return this.buildResult('2.2', [
-      { id: 'r5_eval', title: 'ความตรงจุดของการวิเคราะห์สภาพปัจจุบัน', score: sc1, max: 3, comment: c1, sug: sug1 },
-      { id: 'r5_priority', title: 'ความเป็นไปได้ของแผนพัฒนา 3 ลำดับแรก (Quick Wins)', score: sc2, max: 4, comment: c2, sug: sug2 },
-      { id: 'r5_impact', title: 'การบริหารทรัพยากรที่คุ้มค่า', score: sc3, max: 3, comment: c3, sug: sug3 }
-    ], data);
-  }
-
-  // --------------------------------------------------------------------------
-  // หน่วย 2.3: การวัดและประเมินผลด้วยเทคโนโลยี (Data-Driven Decision)
-  // เกณฑ์ตรงกับ UNITS_DATA['2.3'].rubric: r6_design (4), r6_decision (4), r6_efficiency (2)
-  // --------------------------------------------------------------------------
-  private static eval2_3(data: Record<string, any>): UnitEvaluationResult {
-    const topic = String(data['หัวข้อแบบสำรวจดิจิทัล'] || '').trim();
-    const target = String(data['กลุ่มผู้ตอบ'] || '').trim();
-    const questions = String(data['รายการข้อคำถาม'] || '').trim();
-    const decision = String(data['การตัดสินใจเชิงบริหารจากข้อมูล'] || '').trim();
-
-    const isDup = this.hasDuplicateAnswers([topic, questions, decision]);
-
-    // 1. r6_design (เต็ม 4): คุณภาพของการออกแบบข้อคำถามดิจิทัล
-    const questionLines = questions.split(/\n|(?:[1-9]\.)|(?:ข้อที่\s*[1-9])/).map((s: string) => s.trim()).filter((s: string) => s.length >= 6);
-    const hasSurveyKeywords = /(สำรวจ|ประเมิน|ความพึงพอใจ|ความต้องการ|ปัญหา|การอ่าน|การเรียน|อาหาร|สุขภาพ|เทคโนโลยี|สื่อ|นักเรียน|ผู้ปกครอง|ครู|ระดับ|ข้อเสนอแนะ)/i.test(topic + questions);
-
-    let sc1 = 1;
-    let c1 = 'หัวข้อแบบสำรวจ กลุ่มผู้ตอบ หรือรายการข้อคำถามยังไม่ครบถ้วนสมบูรณ์';
-    let sug1: string | undefined = 'ระบุหัวข้อแบบสำรวจ กลุ่มผู้ตอบ และร่างรายการข้อคำถามอย่างน้อย 3-5 ข้อ (เช่น คำถามมาตรวัด 1-5 และคำถามปลายเปิด)';
-
-    if (isDup) {
-      sc1 = 1;
-      c1 = 'พบการคัดลอกข้อความซ้ำกันในช่องคำตอบ กรุณาเขียนรายการคำถามและการตัดสินใจแยกกันให้ชัดเจน';
-    } else if (
-      this.isMeaningfulText(topic, 12) &&
-      this.isMeaningfulText(target, 6) &&
-      this.isMeaningfulText(questions, 40) &&
-      questionLines.length >= 3 &&
-      hasSurveyKeywords
-    ) {
-      sc1 = 4;
-      c1 = 'ออกแบบหัวข้อ กลุ่มผู้ตอบ และชุดคำถามดิจิทัลได้ชัดเจน กระชับ ตรงวัตถุประสงค์ และตอบง่าย';
-      sug1 = undefined;
-    } else if (this.isMeaningfulText(topic, 10) && this.isMeaningfulText(questions, 20) && hasSurveyKeywords) {
-      sc1 = 2;
-      c1 = 'มีหัวข้อและแนวคำถามเบื้องต้นแล้ว แต่ควรเพิ่มจำนวนข้อคำถามให้ได้อย่างน้อย 3-5 ข้อ และระบุกลุ่มผู้ตอบให้ชัดเจน';
-    }
-
-    // 2. r6_decision (เต็ม 4): การแปลผลข้อมูลสู่การตัดสินใจเชิงบริหาร
-    const hasDecisionKeywords = /(ตัดสินใจ|ปรับ|จัด|เพิ่ม|ลด|พัฒนา|แก้|ส่งเสริม|อบรม|สอนเสริม|งบ|แผน|ติดตาม|ข้อมูล|ผล|ร้อยละ|%|หากพบว่า|แนวโน้ม)/i.test(decision);
-
-    let sc2 = 1;
-    let c2 = 'การตัดสินใจเชิงบริหารยังไม่เชื่อมโยงกับข้อมูลสำรวจ หรือข้อความสั้นเกินไป';
-    let sug2: string | undefined = 'สมมติผลข้อมูลที่คาดว่าจะพบ (เช่น ร้อยละของผู้ตอบที่พบปัญหา) แล้วระบุว่าผู้บริหารจะตัดสินใจสั่งการหรือแก้ปัญหาอย่างไร';
-
-    if (!isDup && this.isMeaningfulText(decision, 30) && hasDecisionKeywords) {
-      sc2 = 4;
-      c2 = 'เชื่อมโยงแนวโน้มข้อมูลจากแบบสำรวจสู่การตัดสินใจเชิงบริหารและการแก้ปัญหาได้อย่างเป็นรูปธรรม';
-      sug2 = undefined;
-    } else if (!isDup && this.isMeaningfulText(decision, 18)) {
-      sc2 = 2;
-      c2 = 'มีการระบุแนวทางปฏิบัติเบื้องต้น แต่ควรเชื่อมโยงให้เห็นว่าอ้างอิงจากผลข้อมูลเรื่องใด';
-    }
-
-    // 3. r6_efficiency (เต็ม 2): ความคุ้มค่าและการลดภาระงาน
-    let sc3 = 0;
-    let c3 = 'ข้อมูลเครื่องมือสำรวจยังไม่ครบถ้วนที่จะช่วยลดขั้นตอนการทำงานเดิม';
-    let sug3: string | undefined = 'กรอกข้อมูลให้ครบทั้งหัวข้อ กลุ่มผู้ตอบ ชุดคำถาม และการนำผลไปใช้เพื่อลดงานเอกสารกระดาษ';
-
-    if (!isDup && sc1 >= 2 && sc2 >= 2 && this.isMeaningfulText(target, 6)) {
-      sc3 = sc1 === 4 && sc2 === 4 ? 2 : 1;
-      c3 = sc3 === 2
-        ? 'การออกแบบฟอร์มออนไลน์ช่วยลดภาระการเก็บกระดาษและประมวลผลข้อมูลได้รวดเร็ว'
-        : 'ช่วยลดภาระงานได้บางส่วน ควรปรับปรุงชุดคำถามและการแปลผลให้ครบถ้วนยิ่งขึ้น';
-      if (sc3 === 2) sug3 = undefined;
-    }
-
-    return this.buildResult('2.3', [
-      { id: 'r6_design', title: 'คุณภาพของการออกแบบข้อคำถามดิจิทัล', score: sc1, max: 4, comment: c1, sug: sug1 },
-      { id: 'r6_decision', title: 'การแปลผลข้อมูลสู่การตัดสินใจเชิงบริหาร', score: sc2, max: 4, comment: c2, sug: sug2 },
-      { id: 'r6_efficiency', title: 'ความคุ้มค่าและการลดภาระงาน', score: sc3, max: 2, comment: c3, sug: sug3 }
-    ], data);
-  }
-
-  // --------------------------------------------------------------------------
-  // หน่วย 3.1: ผู้นำต้นแบบด้านดิจิทัลในทีม (Micro-journal 3 ช่อง)
-  // เกณฑ์ตรงกับ UNITS_DATA['3.1'].rubric: r7_action (2), r7_ethics (3), r7_sharing (3), r7_punctual (2)
-  // --------------------------------------------------------------------------
-  private static eval3_1(data: Record<string, any>): UnitEvaluationResult {
-    const toolGoal = (data['เครื่องมือและเป้าหมาย'] || '').trim();
-    const act = (data['บันทึกช่อง1_ทำอะไรและได้ผลอย่างไร'] || '').trim();
-    const obs = (data['บันทึกช่อง2_ติดขัดตรงไหน'] || '').trim();
-    const eth = (data['บันทึกช่อง3_จริยธรรมดิจิทัลและวิธีแก้'] || '').trim();
-    const plan = (data['แผนถ่ายทอดให้ทีม10นาที'] || '').trim();
-
-    const isDup = this.hasDuplicateAnswers([act, obs, eth, plan]);
-
-    // 1. r7_action (เต็ม 2): การนำเครื่องมือไปใช้กับงานจริง
-    let sc1 = 0;
-    if (!isDup && this.isMeaningfulText(toolGoal, 12) && this.isMeaningfulText(act, 18)) {
-      sc1 = 2;
-    } else if (this.isMeaningfulText(toolGoal, 8) || this.isMeaningfulText(act, 10)) {
-      sc1 = 1;
-    }
-
-    // 2. r7_ethics (เต็ม 3): ความลึกของการสะท้อนคิด รวมมิติจริยธรรมดิจิทัล
-    const hasEthicsKeywords = /(ลิขสิทธิ์|pdpa|ข้อมูลส่วนบุคคล|เครดิต|อ้างอิง|ความถูกต้อง|ปลอดภัย|ภาพ|ฟอนต์|เพลง|ผู้ปกครอง|ยินยอม|จริยธรรม|ตรวจสอบ)/i.test(eth);
-    let sc2 = 1;
-    if (!isDup && this.isMeaningfulText(obs, 12) && this.isMeaningfulText(eth, 18) && hasEthicsKeywords) {
-      sc2 = 3;
-    } else if (!isDup && this.isMeaningfulText(eth, 12)) {
-      sc2 = 2;
-    }
-
-    // 3. r7_sharing (เต็ม 3): ความเป็นไปได้ในการถ่ายทอดสู่ทีม
-    const hasSharingKeywords = /(ประชุม|ครู|นาที|พัก|สาธิต|สอน|แนะนำ|แชร์|แลกเปลี่ยน|ทีม|วัน)/i.test(plan);
-    let sc3 = 1;
-    if (!isDup && this.isMeaningfulText(plan, 20) && hasSharingKeywords) {
-      sc3 = 3;
-    } else if (!isDup && this.isMeaningfulText(plan, 12)) {
-      sc3 = 2;
-    }
-
-    // 4. r7_punctual (เต็ม 2): ความครบถ้วนสมบูรณ์และการส่งงานตามกำหนด
-    const allFilled = [toolGoal, act, obs, eth, plan].every(t => this.isMeaningfulText(t, 10));
-    let sc4 = (!isDup && allFilled) ? 2 : (sc1 >= 1 && sc2 >= 2) ? 1 : 0;
-
-    return this.buildResult('3.1', [
       {
-        id: 'r7_action',
-        title: 'การนำเครื่องมือไปใช้กับงานจริง',
+        id: 'r2_1_1',
+        title: '1. การวิเคราะห์ครูและเลือกเครื่องมือ',
         score: sc1,
-        max: 2,
-        comment: sc1 === 2 ? 'ระบุเครื่องมือ เป้าหมาย และบันทึกผลการทดลองใช้กับงานจริงได้อย่างชัดเจน' : 'ควรระบุเครื่องมือดิจิทัลและผลลัพธ์จากการทดลองทำชิ้นงานจริงให้ชัดเจนขึ้น',
-        sug: sc1 < 2 ? 'ระบุว่าใช้เครื่องมือใด ทำชิ้นงานอะไร และประหยัดเวลาหรือได้ผลลัพธ์อย่างไร' : undefined
+        max: 3,
+        comment: sc1 === 3 ? 'วิเคราะห์ความถนัด ปัญหาการสอน และเลือกเครื่องมือพร้อมเหตุผล 2 ข้อที่โยงปัญหาและทรัพยากรจริงได้ชัดเจน' : 'ควรระบุรหัสครู ความถนัด ปัญหาที่ส่งผลต่อนักเรียน และเหตุผลการเลือกเครื่องมือทั้ง 2 ข้อให้ครบ',
+        sug: sc1 < 3 ? 'ระบุเหตุผลข้อ 1 โยงกับปัญหาหลัก และเหตุผลข้อ 2 โยงกับความถนัดของครูหรืออุปกรณ์ที่มี' : undefined
       },
       {
-        id: 'r7_ethics',
-        title: 'ความลึกของการสะท้อนคิด รวมมิติจริยธรรมดิจิทัล',
+        id: 'r2_1_2',
+        title: '2. แผนโค้ช 3 ครั้ง',
         score: sc2,
         max: 3,
-        comment: sc2 === 3 ? 'สะท้อนจุดที่ติดขัดและระบุแนวทางจัดการด้านจริยธรรมดิจิทัล/ลิขสิทธิ์/PDPA ได้อย่างครบถ้วน' : isDup ? 'พบข้อความซ้ำกันในช่องบันทึก กรุณาแยกเขียนแต่ละช่องตามจริง' : 'ควรระบุประเด็นด้านลิขสิทธิ์สื่อ การคุ้มครองข้อมูลส่วนบุคคล (PDPA) หรือการตรวจสอบความถูกต้องของข้อมูลเพิ่มเติม',
-        sug: sc2 < 3 ? 'ในช่องที่ 3 ให้ระบุประเด็นลิขสิทธิ์ภาพ/ฟอนต์ หรือข้อมูลส่วนบุคคลของนักเรียน และวิธีป้องกันแก้ไข' : undefined
+        comment: sc2 === 3 ? 'ออกแบบแผนโค้ช 3 ครั้งต่อเนื่องกัน โดยครูเป็นผู้ลงมือเองและผู้บริหารสนับสนุนเงื่อนไข' : 'ควรระบุแผนโค้ชให้ครบทั้ง 3 ครั้ง พร้อมสิ่งที่ครูทำ สิ่งที่ผู้บริหารสนับสนุน และเวลา',
+        sug: sc2 < 3 ? 'เขียนแผนโค้ช ครั้งที่ 1 (ตกลงเป้าหมาย/ลอง), ครั้งที่ 2 (ใช้ในคาบจริง), ครั้งที่ 3 (สะท้อนผล)' : undefined
       },
       {
-        id: 'r7_sharing',
-        title: 'ความเป็นไปได้ในการถ่ายทอดสู่ทีม',
+        id: 'r2_1_3',
+        title: '3. บทบาทโค้ชของผู้บริหาร',
         score: sc3,
-        max: 3,
-        comment: sc3 === 3 ? 'แผนการถ่ายทอด 10 นาทีระบุจังหวะเวลา กลุ่มครู และสิ่งที่จะสาธิตได้เหมาะสมและทำได้จริง' : 'ควรระบุช่วงเวลา กลุ่มเป้าหมาย และหัวข้อที่จะสาธิตให้ทีมครูภายใน 10 นาทีให้ชัดเจน',
-        sug: sc3 < 3 ? 'ระบุว่าจะถ่ายทอดเมื่อไร (เช่น ก่อนประชุมครู 10 นาที) ให้ใคร และสาธิตขั้นตอนใด' : undefined
+        max: 2,
+        comment: sc3 === 2 ? 'ตอบเหตุการณ์แทรกโดยรับฟังและปรับแผนให้เล็กลง พร้อมตั้งคำถามเปิด 3 ข้อได้เหมาะสม' : 'ควรตอบเหตุการณ์แทรกแบบโค้ชและเขียนคำถามเปิด 3 ข้อโดยไม่ขึ้นต้นด้วย “ทำไมไม่...”',
+        sug: sc3 < 2 ? 'ปรับแผน 1 จุดให้ลดภาระครูในเหตุการณ์แทรก และตั้งคำถามเปิด 3 ข้อสำหรับการโค้ชครั้งที่ 3' : undefined
       },
       {
-        id: 'r7_punctual',
-        title: 'ความตรงต่อเวลาส่งงาน',
+        id: 'r2_1_4',
+        title: '4. ตัวชี้วัดความสำเร็จ',
         score: sc4,
         max: 2,
-        comment: sc4 === 2 ? 'บันทึกข้อมูลครบทุกช่องตามกรอบเวลาด้วยความตั้งใจ' : 'กรุณากรอกข้อมูลทั้ง 3 ช่องและแผนการถ่ายทอดให้ครบถ้วนโดยไม่คัดลอกข้อความซ้ำกัน'
+        comment: sc4 === 2 ? 'กำหนดตัวชี้วัดครบทั้งกรอบเวลา พฤติกรรมที่นับได้ จำนวนครั้ง และหลักฐาน' : 'ควรระบุตัวชี้วัดตามกรอบ “ภายใน [เวลา] ครู [ทำอะไร] [กี่ครั้ง] ดูจาก [หลักฐาน]”',
+        sug: sc4 < 2 ? 'เพิ่มตัวเลขจำนวนครั้ง กรอบเวลา และแหล่งหลักฐานที่ใช้ตรวจสอบ' : undefined
       }
     ], data);
   }
 
   // --------------------------------------------------------------------------
-  // หน่วย 3.2: ผังการทำงานทีม 3 เสาหลักบน Cloud
-  // เกณฑ์ตรงกับ UNITS_DATA['3.2'].rubric: r8_steps (4), r8_tool (4), r8_clarity (2)
+  // หน่วย 2.2: การจัดสภาพแวดล้อมที่เอื้อต่อการเรียนรู้ (4 เกณฑ์: 3 / 2 / 3 / 2 = เต็ม 10)
   // --------------------------------------------------------------------------
-  private static eval3_2(data: Record<string, any>): UnitEvaluationResult {
-    const task = (data['ชื่องานและบทบาทสมาชิก'] || '').trim();
-    const comm = (data['เสาหลัก1_การสื่อสาร'] || '').trim();
-    const drive = (data['เสาหลัก2_การแบ่งปันไฟล์'] || '').trim();
-    const track = (data['เสาหลัก3_การติดตามงาน'] || '').trim();
+  private static eval2_2(data: Record<string, any>): UnitEvaluationResult {
+    const d1 = (data['ข้อมูลด้าน1_อุปกรณ์_ทะเบียน_ใช้ได้จริง_ใช้ต่อสัปดาห์'] || data['คะแนนอุปกรณ์ฮาร์ดแวร์'] || '').trim();
+    const d2 = (data['ข้อมูลด้าน2_อินเทอร์เน็ต3จุดในเวลาเรียน'] || data['คะแนนระบบเครือข่าย'] || '').trim();
+    const d3 = (data['ข้อมูลด้าน3_แหล่งเรียนรู้ดิจิทัลและชั้นที่ใช้จริง'] || data['คะแนนแหล่งเรียนรู้'] || '').trim();
+    const levels = (data['ระดับความพร้อม1ถึง5_ทั้ง3ด้านพร้อมอ้างตัวเลข'] || '').trim();
+    const ranks = (data['การจัดลำดับ3อันดับ_พร้อมเหตุผลอ้างข้อมูล'] || `${data['QuickWin_1'] || ''} ${data['QuickWin_2'] || ''}`).trim();
+    const actions = (data['ข้อเสนอการดำเนินการภายใน1เดือน_3อันดับ'] || data['QuickWin_3'] || '').trim();
+    const injectedReply = (data['คำตอบเหตุการณ์แทรก'] || '').trim();
 
-    const isDup = this.hasDuplicateAnswers([comm, drive, track]);
+    const isEvalDup = this.hasDuplicateAnswers([d1, d2, d3]);
+    const validEvalCount = [d1, d2, d3].filter(t => this.isMeaningfulText(t, 12)).length;
 
-    // 1. r8_steps (เต็ม 4): ความครบถ้วนของขั้นตอนการทำงานทีม 3 เสาหลัก
+    // 1. r2_2_1: ข้อมูลประเมิน 3 ด้าน (เต็ม 3)
     let sc1 = 1;
-    if (
-      !isDup &&
-      this.isMeaningfulText(task, 12) &&
-      this.isMeaningfulText(comm, 15) &&
-      this.isMeaningfulText(drive, 20) &&
-      this.isMeaningfulText(track, 15)
-    ) {
-      sc1 = 4;
-    } else if (!isDup && this.isMeaningfulText(comm, 10) && this.isMeaningfulText(drive, 12) && this.isMeaningfulText(track, 10)) {
+    if (!isEvalDup && validEvalCount === 3 && /[0-9๑-๙]+/.test(d1 + d2)) {
+      sc1 = 3;
+    } else if (!isEvalDup && validEvalCount >= 2) {
       sc1 = 2;
     }
 
-    // 2. r8_tool (เต็ม 4): ความเหมาะสมของเครื่องมือและระบบไฟล์กลาง
-    const hasCloudKeywords = /(drive|ไดรฟ์|cloud|คลาวด์|โฟลเดอร์|folder|แชร์|สิทธิ์|ชื่อไฟล์|sheets|ชีต|line|ไลน์)/i.test(comm + drive + track);
+    // 2. r2_2_2: การให้ระดับตามเกณฑ์ (เต็ม 2)
+    let sc2 = 0;
+    if (this.isMeaningfulText(levels, 18) && /[1-5๑-๕]/.test(levels)) {
+      sc2 = 2;
+    } else if (this.isMeaningfulText(levels, 10) || sc1 === 3) {
+      sc2 = 1;
+    }
+
+    // 3. r2_2_3: การจัดลำดับและการตัดสินใจ (เต็ม 3)
+    let sc3 = 1;
+    if (this.isMeaningfulText(ranks, 25) && this.isMeaningfulText(injectedReply, 15)) {
+      sc3 = 3;
+    } else if (this.isMeaningfulText(ranks, 15)) {
+      sc3 = 2;
+    }
+
+    // 4. r2_2_4: ข้อเสนอ 1 เดือน (เต็ม 2)
+    let sc4 = 0;
+    if (this.isMeaningfulText(actions, 25)) {
+      sc4 = 2;
+    } else if (this.isMeaningfulText(actions, 12)) {
+      sc4 = 1;
+    }
+
+    return this.buildResult('2.2', [
+      {
+        id: 'r2_2_1',
+        title: '1. ข้อมูลประเมิน 3 ด้าน',
+        score: sc1,
+        max: 3,
+        comment: sc1 === 3 ? 'กรอกข้อมูลครบ 3 ด้านด้วยตัวเลขที่ตรวจสอบได้ แยกอุปกรณ์ที่มีกับใช้ได้จริง และทดสอบเน็ตในเวลาเรียน' : 'ควรระบุข้อมูลตัวเลขให้ครบทั้ง 3 ด้าน (อุปกรณ์, ผลทดสอบเน็ต 3 จุดในเวลาเรียน, แหล่งเรียนรู้)',
+        sug: sc1 < 3 ? 'ระบุจำนวนอุปกรณ์ตามทะเบียน/ใช้ได้จริง/คาบต่อสัปดาห์ และผลทดสอบอินเทอร์เน็ต 3 จุดในเวลาเรียน' : undefined
+      },
+      {
+        id: 'r2_2_2',
+        title: '2. การให้ระดับตามเกณฑ์',
+        score: sc2,
+        max: 2,
+        comment: sc2 === 2 ? 'ให้ระดับ 1–5 ทั้ง 3 ด้านสอดคล้องกับข้อมูลและอ้างตัวเลขกำกับชัดเจน' : 'ควรระบุระดับ 1–5 ทั้ง 3 ด้านพร้อมอ้างข้อมูลตัวเลขด้านละ 1 ข้อ',
+        sug: sc2 < 2 ? 'ระบุระดับ 1–5 ของทั้ง 3 ด้านพร้อมวงเล็บข้อมูลตัวเลขอ้างอิง' : undefined
+      },
+      {
+        id: 'r2_2_3',
+        title: '3. การจัดลำดับและการตัดสินใจ',
+        score: sc3,
+        max: 3,
+        comment: sc3 === 3 ? 'จัดลำดับ 3 อันดับจากผลต่อผู้เรียนและความเป็นไปได้ พร้อมตอบเหตุการณ์แทรกงบ 20,000 บาทโดยอิงข้อมูลจริง' : 'ควรจัดลำดับ 3 อันดับและตอบเหตุการณ์แทรกโดยอ้างอิงตัวเลขจากแบบประเมิน',
+        sug: sc3 < 3 ? 'อ้างข้อมูลตัวเลขประกอบการจัดลำดับทั้ง 3 อันดับ และใช้ข้อมูลตัดสินใจใช้งบ อบต. ในเหตุการณ์แทรก' : undefined
+      },
+      {
+        id: 'r2_2_4',
+        title: '4. ข้อเสนอ 1 เดือน',
+        score: sc4,
+        max: 2,
+        comment: sc4 === 2 ? 'ข้อเสนอภายใน 1 เดือนระบุครบทั้งสิ่งที่จะทำ ผู้รับผิดชอบ ทรัพยากร และสิ่งที่ใช้ตรวจว่าสำเร็จ' : 'ควรระบุข้อเสนอที่ทำได้ภายใน 1 เดือน พร้อมผู้รับผิดชอบและสิ่งที่ใช้ตรวจผลสำเร็จ',
+        sug: sc4 < 2 ? 'ระบุให้ครบว่าแต่ละอันดับจะทำอะไร ใครรับผิดชอบ ใช้ทรัพยากรใด และตรวจผลอย่างไรเมื่อครบเดือน' : undefined
+      }
+    ], data);
+  }
+
+  // --------------------------------------------------------------------------
+  // หน่วย 2.3: การวัดและประเมินผลด้วยเทคโนโลยี (4 เกณฑ์: 3 / 2 / 3 / 2 = เต็ม 10)
+  // --------------------------------------------------------------------------
+  private static eval2_3(data: Record<string, any>): UnitEvaluationResult {
+    const partA1 = String(data['ส่วนก_การตัดสินใจ_วัตถุประสงค์_ข้อมูลที่ต้องรู้3อย่าง'] || data['หัวข้อแบบสำรวจดิจิทัล'] || '').trim();
+    const partA2 = String(data['ส่วนก_ร่างคำถามไม่เกิน10ข้อ_และข้อความแจ้งPDPAหัวฟอร์ม'] || data['รายการข้อคำถาม'] || '').trim();
+    const partB1 = String(data['ส่วนข_ผลที่พบ2ข้อพร้อมตัวเลข_และข้อจำกัดของข้อมูล1ข้อ'] || '').trim();
+    const partB2 = String(data['ส่วนข_การตัดสินใจ1ข้อ_พร้อมข้อมูลที่จะดูซ้ำเพื่อติดตามผล'] || data['การตัดสินใจเชิงบริหารจากข้อมูล'] || '').trim();
+    const injectedReply = String(data['คำตอบเหตุการณ์แทรก'] || '').trim();
+
+    const isDup = this.hasDuplicateAnswers([partA1, partA2, partB1, partB2]);
+
+    // 1. r2_3_1: ความตรงวัตถุประสงค์ของแบบฟอร์ม (เต็ม 3)
+    let sc1 = 1;
+    if (!isDup && this.isMeaningfulText(partA1, 18) && this.isMeaningfulText(partA2, 25)) {
+      sc1 = 3;
+    } else if (!isDup && (this.isMeaningfulText(partA1, 12) || this.isMeaningfulText(partA2, 15))) {
+      sc1 = 2;
+    }
+
+    // 2. r2_3_2: คุณภาพคำถามและการคุ้มครองข้อมูล (เต็ม 2)
+    const hasPdpaHeader = /(ไม่ถามชื่อ|ไม่ระบุตัว|เพื่อ|ชั้นเรียน|วัตถุประสงค์)/i.test(partA2 + ' ' + partA1);
+    let sc2 = 0;
+    if (!isDup && this.isMeaningfulText(partA2, 25) && hasPdpaHeader) {
+      sc2 = 2;
+    } else if (this.isMeaningfulText(partA2, 12)) {
+      sc2 = 1;
+    }
+
+    // 3. r2_3_3: การวิเคราะห์ผล (ส่วน ข และเหตุการณ์แทรก) (เต็ม 3)
+    const hasNumbers = /[0-9๑-๙]+/.test(partB1 + ' ' + injectedReply);
+    let sc3 = 1;
+    if (!isDup && this.isMeaningfulText(partB1, 20) && this.isMeaningfulText(injectedReply, 15) && hasNumbers) {
+      sc3 = 3;
+    } else if (!isDup && (this.isMeaningfulText(partB1, 12) || hasNumbers)) {
+      sc3 = 2;
+    }
+
+    // 4. r2_3_4: การตัดสินใจและการติดตาม (ส่วน ข) (เต็ม 2)
+    let sc4 = 0;
+    if (!isDup && this.isMeaningfulText(partB2, 20)) {
+      sc4 = 2;
+    } else if (this.isMeaningfulText(partB2, 10)) {
+      sc4 = 1;
+    }
+
+    return this.buildResult('2.3', [
+      {
+        id: 'r2_3_1',
+        title: '1. ความตรงวัตถุประสงค์ของแบบฟอร์ม (ส่วน ก)',
+        score: sc1,
+        max: 3,
+        comment: sc1 === 3 ? 'กำหนดการตัดสินใจ วัตถุประสงค์ ข้อมูลที่ต้องรู้ 3 อย่าง และชุดคำถามได้ตรงประเด็น' : 'ควรระบุการตัดสินใจ วัตถุประสงค์ ข้อมูลที่ต้องรู้ 3 อย่าง และร่างคำถามให้ครบถ้วน',
+        sug: sc1 < 3 ? 'เชื่อมโยงคำถามทุกข้อเข้ากับข้อมูลที่ต้องรู้เพื่อการตัดสินใจ (ไม่เกิน 10 ข้อ)' : undefined
+      },
+      {
+        id: 'r2_3_2',
+        title: '2. คุณภาพคำถามและการคุ้มครองข้อมูล (ส่วน ก)',
+        score: sc2,
+        max: 2,
+        comment: sc2 === 2 ? 'คำถามชัดเจน ตัวเลือกไม่ซ้อนกัน เก็บข้อมูลเท่าที่จำเป็น และมีข้อความแจ้งวัตถุประสงค์ที่หัวแบบฟอร์ม' : 'ควรเพิ่มข้อความแจ้งวัตถุประสงค์การใช้ข้อมูลที่หัวแบบฟอร์มและไม่ถามชื่อผู้ตอบเกินจำเป็น',
+        sug: sc2 < 2 ? 'ระบุข้อความแจ้งวัตถุประสงค์ที่หัวแบบฟอร์ม และเก็บเฉพาะระดับชั้นโดยไม่ถามชื่อนักเรียน' : undefined
+      },
+      {
+        id: 'r2_3_3',
+        title: '3. การวิเคราะห์ผล (ส่วน ข และเหตุการณ์แทรก)',
+        score: sc3,
+        max: 3,
+        comment: sc3 === 3 ? 'ระบุผลแยกกลุ่มครบ 2 ข้อพร้อมตัวเลข ระบุข้อจำกัดของข้อมูล และชี้จุดที่ครูวิชาการสรุปเกินข้อมูลได้ถูกต้อง' : 'ควรระบุตัวเลขแยกตามชั้น/ข้อในผลที่พบ 2 ข้อ ข้อจำกัด 1 ข้อ และตอบเหตุการณ์แทรก',
+        sug: sc3 < 3 ? 'อ้างตัวเลขคะแนนเฉลี่ย ป.5 (4.6) และข้อ 6–8 (ตอบถูก 30% / ป.5 ถูก 17%) พร้อมระบุข้อจำกัดของข้อมูล' : undefined
+      },
+      {
+        id: 'r2_3_4',
+        title: '4. การตัดสินใจและการติดตาม (ส่วน ข)',
+        score: sc4,
+        max: 2,
+        comment: sc4 === 2 ? 'การตัดสินใจระบุครบทั้งกลุ่มเป้าหมาย สิ่งที่ทำ เวลา และข้อมูลที่จะดูซ้ำเพื่อติดตามผล' : 'ควรระบุการตัดสินใจให้ครบทั้งกลุ่ม สิ่งที่ทำ เวลา และข้อมูลที่จะดูซ้ำเมื่อครบกำหนด',
+        sug: sc4 < 2 ? 'ระบุว่าจะจัดสอนซ่อมเสริมกลุ่มใด เรื่องใด นานเท่าไร และดูข้อมูลใดซ้ำเมื่อใด' : undefined
+      }
+    ], data);
+  }
+
+  // --------------------------------------------------------------------------
+  // หน่วย 3.1: การเป็นผู้นำต้นแบบด้านดิจิทัลในทีม (4 เกณฑ์: 3 / 2 / 2 / 3 = เต็ม 10)
+  // --------------------------------------------------------------------------
+  private static eval3_1(data: Record<string, any>): UnitEvaluationResult {
+    const toolGoal = (data['เครื่องมือและเป้าหมายที่วัดได้เทียบแบบเดิม'] || data['เครื่องมือและเป้าหมาย'] || '').trim();
+    const act = (data['บันทึกช่อง1_ผลเทียบเป้าหมายมีตัวเลข_และไฟล์ชิ้นงาน'] || data['บันทึกช่อง1_ทำอะไรและได้ผลอย่างไร'] || '').trim();
+    const obs = (data['บันทึกช่อง2_สิ่งที่ติดขัดและวิธีแก้'] || data['บันทึกช่อง2_ติดขัดตรงไหน'] || '').trim();
+    const factCheck = (data['บันทึกช่อง3_ข้อมูลที่ตรวจ_แหล่งที่ใช้ตรวจ_และส่วนที่AIช่วย'] || data['บันทึกช่อง3_จริยธรรมดิจิทัลและวิธีแก้'] || '').trim();
+    const plan = (data['แผนถ่ายทอดให้ทีม10นาที_4ช่วงพร้อมนาทีและวันติดตาม'] || data['แผนถ่ายทอดให้ทีม10นาที'] || '').trim();
+    const injectedReply = (data['คำตอบเหตุการณ์แทรก'] || '').trim();
+
+    const isDup = this.hasDuplicateAnswers([act, obs, factCheck, plan]);
+
+    // 1. r3_1_1: การใช้เครื่องมือกับงานจริง (เต็ม 3)
+    const hasNum = /[0-9๑-๙]+/.test(toolGoal + ' ' + act);
+    let sc1 = 1;
+    if (!isDup && this.isMeaningfulText(toolGoal, 15) && this.isMeaningfulText(act, 15) && hasNum) {
+      sc1 = 3;
+    } else if (!isDup && (this.isMeaningfulText(toolGoal, 10) || this.isMeaningfulText(act, 10))) {
+      sc1 = 2;
+    }
+
+    // 2. r3_1_2: การสะท้อนสิ่งที่ติดขัด (เต็ม 2)
+    let sc2 = 0;
+    if (!isDup && this.isMeaningfulText(obs, 15)) {
+      sc2 = 2;
+    } else if (this.isMeaningfulText(obs, 8)) {
+      sc2 = 1;
+    }
+
+    // 3. r3_1_3: การตรวจสอบความถูกต้องของข้อมูล (เต็ม 2)
+    let sc3 = 0;
+    if (!isDup && this.isMeaningfulText(factCheck, 15) && this.isMeaningfulText(injectedReply, 12)) {
+      sc3 = 2;
+    } else if (this.isMeaningfulText(factCheck, 10) || this.isMeaningfulText(injectedReply, 10)) {
+      sc3 = 1;
+    }
+
+    // 4. r3_1_4: แผนถ่ายทอดให้ทีม (เต็ม 3)
+    let sc4 = 1;
+    if (!isDup && this.isMeaningfulText(plan, 25) && /(นาที|ครู|ติดตาม|ศุกร์|จันทร์|พุธ|สัปดาห์)/i.test(plan)) {
+      sc4 = 3;
+    } else if (!isDup && this.isMeaningfulText(plan, 12)) {
+      sc4 = 2;
+    }
+
+    return this.buildResult('3.1', [
+      {
+        id: 'r3_1_1',
+        title: '1. การใช้เครื่องมือกับงานจริง',
+        score: sc1,
+        max: 3,
+        comment: sc1 === 3 ? 'ตั้งเป้าหมายที่วัดได้เทียบกับวิธีเดิม และบันทึกผลลัพธ์จริงพร้อมตัวเลขเวลาได้อย่างชัดเจน' : 'ควรระบุเป้าหมายที่มีตัวเลขเวลาเทียบกับแบบเดิม และบันทึกเวลาที่ใช้จริงในช่องที่ 1',
+        sug: sc1 < 3 ? 'ระบุเวลาที่ตั้งเป้า เวลาแบบเดิม และเวลาที่ใช้จริงเป็นนาทีให้ครบถ้วน' : undefined
+      },
+      {
+        id: 'r3_1_2',
+        title: '2. การสะท้อนสิ่งที่ติดขัด',
+        score: sc2,
+        max: 2,
+        comment: sc2 === 2 ? 'ระบุสิ่งที่ติดขัดตามจริงพร้อมวิธีแก้ที่นำไปบอกทีมต่อได้' : 'ควรระบุจุดที่ติดขัดระหว่างทดลองใช้และวิธีที่ท่านใช้แก้ไขในช่องที่ 2',
+        sug: sc2 < 2 ? 'เล่าปัญหาที่พบจริงตอนทดลองใช้เครื่องมือและวิธีแก้ปัญหา' : undefined
+      },
+      {
+        id: 'r3_1_3',
+        title: '3. การตรวจสอบความถูกต้องของข้อมูล',
+        score: sc3,
+        max: 2,
+        comment: sc3 === 2 ? 'ระบุข้อมูลที่ตรวจและแหล่งต้นทางที่ใช้ตรวจชัดเจน พร้อมตอบเหตุการณ์แทรกให้ชะลอและตรวจแหล่งทางการก่อนส่งต่อ' : 'ควรระบุข้อมูลที่ตรวจ แหล่งต้นทางที่ใช้ตรวจ และตอบเหตุการณ์แทรกเรื่องข่าวลือในกลุ่มครู',
+        sug: sc3 < 2 ? 'ระบุว่าตรวจข้อมูลใดกับเอกสารต้นทางใด และตอบครูในเหตุการณ์แทรกให้ตรวจกับต้นสังกัดก่อนส่ง' : undefined
+      },
+      {
+        id: 'r3_1_4',
+        title: '4. แผนถ่ายทอดให้ทีม',
+        score: sc4,
+        max: 3,
+        comment: sc4 === 3 ? 'แผนถ่ายทอด 10 นาทีครบ 4 ช่วง ให้ครูลงมือทำเองอย่างน้อยครึ่งหนึ่งของเวลา และมีวันติดตามผลชัดเจน' : 'ควรระบุแผนถ่ายทอด 10 นาทีให้ครบ 4 ช่วง (ครูลงมือทำ ≥ 5 นาที) และระบุวันติดตามผล',
+        sug: sc4 < 3 ? 'แบ่งเวลา 4 ช่วง (ดูผลงาน 1 น. / สาธิต 2 น. / ครูลงมือทำ 6 น. / นัดหมาย 1 น.) พร้อมวันติดตามผล' : undefined
+      }
+    ], data);
+  }
+
+  // --------------------------------------------------------------------------
+  // หน่วย 3.2: การทำงานร่วมกันด้วยเทคโนโลยีดิจิทัล (4 เกณฑ์: 3 / 3 / 3 / 1 = เต็ม 10)
+  // --------------------------------------------------------------------------
+  private static eval3_2(data: Record<string, any>): UnitEvaluationResult {
+    const taskApps = (data['งานทีม_สมาชิก_บทบาท_และเครื่องมือที่ใช้ได้รวมไม่เกิน3แอป'] || data['ชื่องานและบทบาทสมาชิก'] || '').trim();
+    const comm = (data['ส่วนที่1_การสื่อสาร_ใคร_แจ้งอะไร_ช่องทาง_เมื่อไร_และข้อห้าม'] || data['เสาหลัก1_การสื่อสาร'] || '').trim();
+    const drive = (data['ส่วนที่2_การแบ่งปันไฟล์_ที่เก็บกลางบัญชีโรงเรียน_ชื่อไฟล์_สิทธิ์ตามบทบาท'] || data['เสาหลัก2_การแบ่งปันไฟล์'] || '').trim();
+    const track = (data['ส่วนที่3_การติดตามงาน_เครื่องมือเดียว_รายการงาน_กำหนดส่ง_ผู้ตรวจ'] || data['เสาหลัก3_การติดตามงาน'] || '').trim();
+    const plc = (data['แผนPLCออนไลน์ข้ามโรงเรียน_1วงรอบ4สัปดาห์'] || '').trim();
+    const injectedReply = (data['คำตอบเหตุการณ์แทรก'] || '').trim();
+
+    const isDup = this.hasDuplicateAnswers([comm, drive, track, plc]);
+
+    // 1. r3_2_1: ขั้นตอนทีมและเครื่องมือ (เต็ม 3)
+    let sc1 = 1;
+    if (!isDup && this.isMeaningfulText(taskApps, 15) && this.isMeaningfulText(comm, 15) && this.isMeaningfulText(track, 15)) {
+      sc1 = 3;
+    } else if (!isDup && this.isMeaningfulText(comm, 10) && this.isMeaningfulText(track, 10)) {
+      sc1 = 2;
+    }
+
+    // 2. r3_2_2: การจัดการไฟล์ร่วมและการแก้ปัญหา (เต็ม 3)
     let sc2 = 1;
-    if (!isDup && this.isMeaningfulText(drive, 20) && hasCloudKeywords) {
-      sc2 = 4;
+    if (!isDup && this.isMeaningfulText(drive, 20) && this.isMeaningfulText(injectedReply, 15)) {
+      sc2 = 3;
     } else if (!isDup && this.isMeaningfulText(drive, 12)) {
       sc2 = 2;
     }
 
-    // 3. r8_clarity (เต็ม 2): ความชัดเจนของการนำเสนอและบทบาทสมาชิก
-    let sc3 = (!isDup && sc1 === 4 && sc2 === 4) ? 2 : (!isDup && sc1 >= 2) ? 1 : 0;
+    // 3. r3_2_3: วงรอบ PLC ออนไลน์ (เต็ม 3)
+    let sc3 = 1;
+    if (!isDup && this.isMeaningfulText(plc, 25)) {
+      sc3 = 3;
+    } else if (!isDup && (this.isMeaningfulText(plc, 12) || sc1 === 3)) {
+      sc3 = 2;
+    }
+
+    // 4. r3_2_4: ความชัดเจนของผัง (เต็ม 1)
+    const sc4 = !isDup && sc1 >= 2 && sc2 >= 2 ? 1 : 0;
 
     return this.buildResult('3.2', [
       {
-        id: 'r8_steps',
-        title: 'ความครบถ้วนของขั้นตอนการทำงานทีม',
+        id: 'r3_2_1',
+        title: '1. ขั้นตอนทีมและเครื่องมือ',
         score: sc1,
-        max: 4,
-        comment: sc1 === 4 ? 'ออกแบบขั้นตอนครบทั้งการสื่อสาร การแบ่งปันไฟล์ และการติดตามงาน พร้อมระบุบทบาทชัดเจน' : isDup ? 'พบข้อความซ้ำกันในเสาหลักทั้ง 3 ด้าน กรุณาเขียนแยกแต่ละเสาหลักให้ชัดเจน' : 'ควรระบุรายละเอียดให้ครบทั้งชื่องาน บทบาทสมาชิก และขั้นตอนทั้ง 3 เสาหลัก',
-        sug: sc1 < 4 ? 'ระบุรายละเอียดทั้งเสาหลักที่ 1 (การสื่อสาร), เสาหลักที่ 2 (การแชร์ไฟล์), และเสาหลักที่ 3 (การติดตามงาน)' : undefined
+        max: 3,
+        comment: sc1 === 3 ? 'ระบุขั้นตอนทีมครบ 3 ส่วน ใช้ไม่เกิน 3 แอป แยกหน้าที่ชัดเจน และมีวิธีรองรับสมาชิกที่ไม่ถนัด' : 'ควรระบุงานทีม เครื่องมือรวมไม่เกิน 3 แอป วิธีรองรับคนไม่ถนัด และกติกาทั้ง 3 ส่วนให้ครบ',
+        sug: sc1 < 3 ? 'ระบุการสื่อสาร การแบ่งปันไฟล์ และการติดตามงาน พร้อมวิธีรองรับครูที่ไม่ถนัดด้วยระบบคู่หู' : undefined
       },
       {
-        id: 'r8_tool',
-        title: 'ความเหมาะสมของเครื่องมือ',
+        id: 'r3_2_2',
+        title: '2. การจัดการไฟล์ร่วมและการแก้ปัญหา',
         score: sc2,
-        max: 4,
-        comment: sc2 === 4 ? 'เลือกใช้เครื่องมือ Cloud (เช่น Google Drive/Sheets) กำหนดโครงสร้างโฟลเดอร์ กฎการตั้งชื่อ และผู้ดูแลไฟล์กลางได้เหมาะสม' : 'ควรอธิบายการจัดโฟลเดอร์กลางบน Cloud การตั้งชื่อไฟล์ และสิทธิ์การเข้าถึงให้ชัดเจนขึ้น',
-        sug: sc2 < 4 ? 'ระบุชื่อโฟลเดอร์กลาง กฎการตั้งชื่อไฟล์ สิทธิ์การแก้ไข และผู้รับผิดชอบดูแลไฟล์หลัก' : undefined
+        max: 3,
+        comment: sc2 === 3 ? 'เก็บไฟล์ในบัญชีโรงเรียน ระบุเจ้าของไฟล์กลาง รูปแบบชื่อไฟล์ ตารางสิทธิ์ และตอบเหตุการณ์แทรกได้ครบถ้วน' : 'ควรระบุบัญชีโรงเรียน เจ้าของไฟล์กลาง ตารางสิทธิ์ และตอบเหตุการณ์แทรกกรณีไฟล์หาย/มีสำเนาแยก',
+        sug: sc2 < 3 ? 'ระบุการกู้ไฟล์จากถังขยะ การรวมสำเนาเข้าไฟล์ต้นฉบับเดียว และการตั้งสิทธิ์ป้องกันเกิดซ้ำ' : undefined
       },
       {
-        id: 'r8_clarity',
-        title: 'ความชัดเจนของการนำเสนอ',
+        id: 'r3_2_3',
+        title: '3. วงรอบ PLC ออนไลน์',
         score: sc3,
-        max: 2,
-        comment: sc3 === 2 ? 'ผังขั้นตอนชัดเจน เข้าใจง่าย ทีมงานนำไปปฏิบัติตามได้ทันที' : 'ควรเพิ่มเติมรายละเอียดบทบาทและกำหนดเวลาส่งงานให้ชัดเจนยิ่งขึ้น'
+        max: 3,
+        comment: sc3 === 3 ? 'ออกแบบวงรอบ PLC ออนไลน์ข้ามโรงเรียน 4 สัปดาห์ครบทั้งประเด็นปัญหานักเรียน การลองในห้อง และโฟลเดอร์หลักฐานงานนักเรียน' : 'ควรระบุแผน PLC ออนไลน์ข้ามโรงเรียน 1 วงรอบ (4 สัปดาห์) ให้ครบทั้ง 4 ขั้น',
+        sug: sc3 < 3 ? 'ระบุประเด็นจากปัญหานักเรียน สิ่งที่ลองในห้อง หลักฐานงานนักเรียนในโฟลเดอร์ร่วม และวันนัดออนไลน์' : undefined
+      },
+      {
+        id: 'r3_2_4',
+        title: '4. ความชัดเจนของผัง',
+        score: sc4,
+        max: 1,
+        comment: sc4 === 1 ? 'ผังชัดเจน อ่านใน 1 นาทีรู้ทันทีว่าส่งข้อความ เก็บไฟล์ และดูสถานะงานที่ไหน' : 'ควรจัดแยกข้อมูลแต่ละส่วนให้ชัดเจนไม่ปนกัน'
       }
     ], data);
   }
 
   // --------------------------------------------------------------------------
-  // หน่วย 4.1: การสร้างวิสัยทัศน์เชิงดิจิทัล
-  // เกณฑ์ตรงกับ UNITS_DATA['4.1'].rubric: r9_vision (4), r9_participate (4), r9_creative (2)
+  // หน่วย 4.1: การสร้างวิสัยทัศน์เชิงดิจิทัล (4 เกณฑ์: 3 / 3 / 2 / 2 = เต็ม 10)
   // --------------------------------------------------------------------------
   private static eval4_1(data: Record<string, any>): UnitEvaluationResult {
-    const p1 = (data['คำตอบนำทาง_ด้านผู้เรียน'] || '').trim();
-    const p2 = (data['คำตอบนำทาง_ด้านครู'] || '').trim();
-    const p3 = (data['คำตอบนำทาง_ด้านชุมชน'] || '').trim();
-    const vision = (data['วิสัยทัศน์ดิจิทัล'] || '').trim();
-    const forum = (data['แผนเวทีระดมความเห็น'] || '').trim();
-    const channel = (data['ช่องทางสื่อสารวิสัยทัศน์'] || '').trim();
+    const contextPrompts = (
+      data['บริบทโรงเรียน3ข้อ_และคำตอบนำทาง3ด้าน'] ||
+      `${data['คำตอบนำทาง_ด้านผู้เรียน'] || ''} ${data['คำตอบนำทาง_ด้านครู'] || ''} ${data['คำตอบนำทาง_ด้านชุมชน'] || ''}`
+    ).trim();
+    const vision = (data['วิสัยทัศน์ดิจิทัล_1ถึง2ประโยค_เน้นผู้เรียนและบริบท'] || data['วิสัยทัศน์ดิจิทัล'] || '').trim();
+    const goals = (data['เป้าหมายที่วัดได้_2ถึง3ข้อ_ครบ5องค์ประกอบ'] || '').trim();
+    const participate = (data['แผนการมีส่วนร่วม1ครั้งก่อนประกาศ_อย่างน้อย3กลุ่ม'] || data['แผนเวทีระดมความเห็น'] || '').trim();
+    const commPlan = (data['แผนสื่อสารวิสัยทัศน์และรอบรายงานความก้าวหน้า'] || data['ช่องทางสื่อสารวิสัยทัศน์'] || '').trim();
+    const injectedReply = (data['คำตอบเหตุการณ์แทรก'] || '').trim();
 
-    const isPromptsDup = this.hasDuplicateAnswers([p1, p2, p3]);
+    const isDup = this.hasDuplicateAnswers([vision, goals, participate]);
+    const hasBroadWords = /(เป็นเลิศ|ก้าวไกล|ชั้นนำ|สู่สากล|มาตรฐานสากล)/.test(vision);
 
-    // 1. r9_vision (เต็ม 4): ความชัดเจนและวัดผลได้ของวิสัยทัศน์
-    const hasTime = /(ปี|ภาคเรียน|256|257|ภายใน)/i.test(vision);
-    const hasStakeholders = /(นักเรียน|ผู้เรียน|เด็ก)/i.test(vision) && /(ครู|บุคลากร)/i.test(vision);
+    // 1. r4_1_1: วิสัยทัศน์ (เต็ม 3)
     let sc1 = 1;
-    if (this.isMeaningfulText(vision, 45) && hasTime && hasStakeholders) {
-      sc1 = 4;
-    } else if (this.isMeaningfulText(vision, 25)) {
+    if (!isDup && !hasBroadWords && this.isMeaningfulText(vision, 20) && /(นักเรียน|ผู้เรียน|เด็ก)/.test(vision)) {
+      sc1 = 3;
+    } else if (!isDup && this.isMeaningfulText(vision, 15)) {
       sc1 = 2;
     }
 
-    // 2. r9_participate (เต็ม 4): ความเป็นไปได้ของแผนสื่อสารและการมีส่วนร่วม
+    // 2. r4_1_2: เป้าหมายที่วัดได้ (เต็ม 3)
+    const hasGoalNum = /[0-9๑-๙]+|%|ร้อยละ/.test(goals + ' ' + vision);
     let sc2 = 1;
-    if (
-      !this.hasDuplicateAnswers([vision, forum]) &&
-      this.isMeaningfulText(forum, 20) &&
-      this.isMeaningfulText(channel, 10)
-    ) {
-      sc2 = 4;
-    } else if (this.isMeaningfulText(forum, 12)) {
+    if (!isDup && this.isMeaningfulText(goals, 25) && hasGoalNum) {
+      sc2 = 3;
+    } else if (!isDup && (this.isMeaningfulText(goals, 12) || this.isMeaningfulText(contextPrompts, 20))) {
       sc2 = 2;
     }
 
-    // 3. r9_creative (เต็ม 2): ความคิดสร้างสรรค์และสะท้อนบริบทโรงเรียน (จากคำตอบนำทาง 3 มิติ)
+    // 3. r4_1_3: การมีส่วนร่วม (เต็ม 2)
     let sc3 = 0;
-    if (!isPromptsDup && this.isMeaningfulText(p1, 12) && this.isMeaningfulText(p2, 12) && this.isMeaningfulText(p3, 12)) {
+    if (!isDup && this.isMeaningfulText(participate, 20)) {
       sc3 = 2;
-    } else if (!isPromptsDup && [p1, p2, p3].filter(p => this.isMeaningfulText(p, 10)).length >= 2) {
+    } else if (this.isMeaningfulText(participate, 10)) {
       sc3 = 1;
+    }
+
+    // 4. r4_1_4: การตอบรับความเห็นและสื่อสาร (เต็ม 2)
+    let sc4 = 0;
+    if (!isDup && this.isMeaningfulText(commPlan, 12) && this.isMeaningfulText(injectedReply, 15)) {
+      sc4 = 2;
+    } else if (this.isMeaningfulText(commPlan, 10) || this.isMeaningfulText(injectedReply, 10)) {
+      sc4 = 1;
     }
 
     return this.buildResult('4.1', [
       {
-        id: 'r9_vision',
-        title: 'ความชัดเจนและวัดผลได้ของวิสัยทัศน์',
+        id: 'r4_1_1',
+        title: '1. วิสัยทัศน์',
         score: sc1,
-        max: 4,
-        comment: sc1 === 4 ? 'แถลงการณ์วิสัยทัศน์ชัดเจน ระบุกรอบเวลา และครอบคลุมเป้าหมายทั้งด้านผู้เรียนและครูอย่างเป็นรูปธรรม' : 'วิสัยทัศน์ยังสั้นเกินไป หรือขาดการระบุกรอบเวลาและเป้าหมายของนักเรียนและครู',
-        sug: sc1 < 4 ? 'เขียนวิสัยทัศน์ความยาว 3-4 ประโยค โดยระบุกรอบเวลา (เช่น "ภายใน 3 ปี...") และผลลัพธ์ที่เกิดกับนักเรียน ครู และชุมชน' : undefined
+        max: 3,
+        comment: sc1 === 3 ? 'วิสัยทัศน์ 1–2 ประโยคมีผู้เรียนเป็นประธาน บอกผลต่อผู้เรียนและสะท้อนบริบทของโรงเรียนโดยไม่ใช้คำขวัญกว้าง' : 'ควรเขียนวิสัยทัศน์ให้มี “นักเรียน/ผู้เรียน” เป็นประธาน สะท้อนบริบทชุมชน และตัดคำขวัญกว้าง (เช่น เป็นเลิศ/ก้าวไกล)',
+        sug: sc1 < 3 ? 'ขึ้นต้นด้วย “นักเรียน...” บอกสิ่งที่จะทำได้ด้วยเทคโนโลยี และเชื่อมโยงกับบริบทของโรงเรียน' : undefined
       },
       {
-        id: 'r9_participate',
-        title: 'ความเป็นไปได้ของแผนสื่อสารและการมีส่วนร่วม',
+        id: 'r4_1_2',
+        title: '2. เป้าหมายที่วัดได้',
         score: sc2,
-        max: 4,
-        comment: sc2 === 4 ? 'มีแผนจัดเวทีระดมความคิดเห็นและระบุช่องทางสื่อสารวิสัยทัศน์สู่บุคลากรและชุมชนอย่างครบถ้วน' : 'ควรระบุรายละเอียดเวทีระดมความเห็นและช่องทางสื่อสารวิสัยทัศน์ให้ครบถ้วน',
-        sug: sc2 < 4 ? 'ระบุรูปแบบเวทีรับฟังความคิดเห็นครู และช่องทางประชาสัมพันธ์วิสัยทัศน์อย่างน้อย 2 ช่องทาง' : undefined
+        max: 3,
+        comment: sc2 === 3 ? 'กำหนดเป้าหมายที่วัดได้ 2–3 ข้อ ครบ 5 องค์ประกอบ (ใคร ทำอะไร ได้เท่าไร ภายในเมื่อไร วัดด้วยอะไร)' : 'ควรระบุเป้าหมาย 2–3 ข้อให้ครบทั้งตัวเลข เวลา และเครื่องมือวัด โดยอย่างน้อย 1 ข้อวัดผลที่ผู้เรียน',
+        sug: sc2 < 3 ? 'เขียนเป้าหมายตามกรอบ “ภายใน [เมื่อไร] [ใคร] [ทำอะไร] [ได้เท่าไร/%] วัดด้วย [อะไร]”' : undefined
       },
       {
-        id: 'r9_creative',
-        title: 'ความคิดสร้างสรรค์และสะท้อนบริบทโรงเรียน',
+        id: 'r4_1_3',
+        title: '3. การมีส่วนร่วม',
         score: sc3,
         max: 2,
-        comment: sc3 === 2 ? 'วิเคราะห์คำตอบนำทางทั้ง 3 มิติ (ผู้เรียน ครู ชุมชน) ได้สอดคล้องกับบริบทโรงเรียนขนาดเล็ก' : 'กรุณาตอบคำถามนำทางทั้ง 3 ด้าน (ผู้เรียน ครู ชุมชน) ให้ครบถ้วนโดยไม่คัดลอกข้อความซ้ำกัน',
-        sug: sc3 < 2 ? 'เติมคำตอบนำทางด้านผู้เรียน ด้านครู และด้านชุมชนให้ครบทั้ง 3 ช่อง' : undefined
+        comment: sc3 === 2 ? 'ออกแบบการมีส่วนร่วมอย่างน้อย 3 กลุ่มก่อนร่าง พร้อมคำถามและวิธีบอกกลับชัดเจน' : 'ควรระบุกลุ่มผู้มีส่วนร่วมอย่างน้อย 3 กลุ่ม (ครู ผู้ปกครอง นักเรียน ชุมชน) และวิธีบอกกลับ',
+        sug: sc3 < 2 ? 'ระบุกลุ่มผู้เข้าร่วม เครื่องมือ/เวที คำถาม 2–3 ข้อ และวิธีแจ้งกลับว่านำความเห็นไปปรับอย่างไร' : undefined
+      },
+      {
+        id: 'r4_1_4',
+        title: '4. การตอบรับความเห็นและสื่อสาร',
+        score: sc4,
+        max: 2,
+        comment: sc4 === 2 ? 'ตอบเหตุการณ์แทรกโดยปรับตามความเห็น (“ท่านเสนอ – เราปรับ”) และมีช่องทางสื่อสารพร้อมรอบรายงานผลทุกภาคเรียน' : 'ควรตอบเหตุการณ์แทรกและระบุช่องทางสื่อสารพร้อมรอบการรายงานความก้าวหน้า',
+        sug: sc4 < 2 ? 'ระบุการปรับเป้าหมายตามความเห็นในเหตุการณ์แทรก และกำหนดรอบรายงานความก้าวหน้าทุกภาคเรียน' : undefined
       }
     ], data);
   }
 
   // --------------------------------------------------------------------------
-  // หน่วย 4.2: เจตคติเชิงบวกต่อเทคโนโลยี (TAM Model)
-  // เกณฑ์ตรงกับ UNITS_DATA['4.2'].rubric: r10_target (3), r10_quickwin (4), r10_metrics (3)
+  // หน่วย 4.2: เจตคติเชิงบวกต่อเทคโนโลยี (4 เกณฑ์: 2 / 3 / 2 / 3 = เต็ม 10)
   // --------------------------------------------------------------------------
   private static eval4_2(data: Record<string, any>): UnitEvaluationResult {
-    const concern = (data['กลุ่มเป้าหมายและความกังวล'] || '').trim();
-    const format = (data['รูปแบบกิจกรรม'] || '').trim();
-    const quickWin = (data['QuickWinที่เห็นผลครั้งเดียว'] || '').trim();
-    const schedule = (data['ความถี่และผู้รับผิดชอบ'] || '').trim();
-    const quant = (data['ตัวชี้วัดเชิงปริมาณ'] || '').trim();
-    const qual = (data['ตัวชี้วัดเชิงคุณภาพ'] || '').trim();
+    const concern = (data['กลุ่มครู_หลักฐานคำพูดหรือการกระทำจริง_และสาเหตุหลัก'] || data['กลุ่มเป้าหมายและความกังวล'] || '').trim();
+    const quickWin = (data['QuickWin_งานที่ลด_เครื่องมือ_เวลาที่ประหยัด_สอนจบใน30นาที'] || data['QuickWinที่เห็นผลครั้งเดียว'] || '').trim();
+    const plan3m = (data['แผนกิจกรรม3ครั้งใน3เดือน_สิ่งที่ทำ_พื้นที่ปลอดภัย_ครูต้นแบบ_การชื่นชม'] || data['รูปแบบกิจกรรม'] || '').trim();
+    const metrics = (
+      data['ตัวชี้วัด2ถึง3ข้อ_พฤติกรรมที่นับได้_และความมั่นใจก่อนหลังพร้อมวิธีเก็บ'] ||
+      `${data['ตัวชี้วัดเชิงปริมาณ'] || ''} ${data['ตัวชี้วัดเชิงคุณภาพ'] || ''}`
+    ).trim();
+    const support = (data['ผู้รับผิดชอบ_ทรัพยากร_และสิ่งที่ผอลดงานให้ครูมีเวลา'] || data['ความถี่และผู้รับผิดชอบ'] || '').trim();
+    const injectedReply = (data['คำตอบเหตุการณ์แทรก'] || '').trim();
 
-    const isDup = this.hasDuplicateAnswers([concern, quickWin, quant, qual]);
+    const isDup = this.hasDuplicateAnswers([concern, quickWin, plan3m, metrics]);
 
-    // 1. r10_target (เต็ม 3): ความตรงจุดต่อความกังวลของครู
-    let sc1 = 1;
-    if (!isDup && this.isMeaningfulText(concern, 15) && /(ครู|กังวล|กลัว|ไม่คล่อง|ภาระ|เวลา|ยาก|พัง)/i.test(concern)) {
-      sc1 = 3;
-    } else if (!isDup && this.isMeaningfulText(concern, 10)) {
+    // 1. r4_2_1: การวิเคราะห์ความกังวล (เต็ม 2)
+    let sc1 = 0;
+    if (!isDup && this.isMeaningfulText(concern, 18)) {
       sc1 = 2;
+    } else if (this.isMeaningfulText(concern, 10)) {
+      sc1 = 1;
     }
 
-    // 2. r10_quickwin (เต็ม 4): การออกแบบ Quick Win ที่เห็นประโยชน์จริงและใช้ง่าย (TAM)
+    // 2. r4_2_2: กิจกรรมตรงสาเหตุ (เต็ม 3)
     let sc2 = 1;
-    if (
-      !isDup &&
-      this.isMeaningfulText(format, 12) &&
-      this.isMeaningfulText(quickWin, 20) &&
-      this.isMeaningfulText(schedule, 10)
-    ) {
-      sc2 = 4;
-    } else if (!isDup && this.isMeaningfulText(quickWin, 12)) {
+    if (!isDup && this.isMeaningfulText(quickWin, 18) && this.isMeaningfulText(plan3m, 25) && this.isMeaningfulText(support, 10)) {
+      sc2 = 3;
+    } else if (!isDup && (this.isMeaningfulText(quickWin, 12) || this.isMeaningfulText(plan3m, 15))) {
       sc2 = 2;
     }
 
-    // 3. r10_metrics (เต็ม 3): ความชัดเจนของตัวชี้วัดความสำเร็จ (ทั้งปริมาณและคุณภาพ)
-    let sc3 = 1;
-    if (
-      !isDup &&
-      !this.hasDuplicateAnswers([quant, qual]) &&
-      this.isMeaningfulText(quant, 12) &&
-      this.isMeaningfulText(qual, 12)
-    ) {
-      sc3 = 3;
-    } else if (!isDup && (this.isMeaningfulText(quant, 10) || this.isMeaningfulText(qual, 10))) {
+    // 3. r4_2_3: การปรับเมื่อไม่เป็นไปตามแผน (เหตุการณ์แทรก) (เต็ม 2)
+    let sc3 = 0;
+    if (!isDup && this.isMeaningfulText(injectedReply, 15)) {
       sc3 = 2;
+    } else if (this.isMeaningfulText(injectedReply, 8) || sc2 === 3) {
+      sc3 = 1;
+    }
+
+    // 4. r4_2_4: ตัวชี้วัด (เต็ม 3)
+    let sc4 = 1;
+    if (!isDup && this.isMeaningfulText(metrics, 22) && /[0-9๑-๙]+/.test(metrics)) {
+      sc4 = 3;
+    } else if (!isDup && this.isMeaningfulText(metrics, 12)) {
+      sc4 = 2;
     }
 
     return this.buildResult('4.2', [
       {
-        id: 'r10_target',
-        title: 'ความตรงจุดต่อความกังวลของครู',
+        id: 'r4_2_1',
+        title: '1. การวิเคราะห์ความกังวล',
         score: sc1,
-        max: 3,
-        comment: sc1 === 3 ? 'วิเคราะห์กลุ่มเป้าหมายและความกังวลของครูได้ตรงจุดด้วยความเข้าอกเข้าใจ (Empathy)' : 'ควรระบุกลุ่มครูเป้าหมายและสาเหตุความกังวลต่อเทคโนโลยีให้ชัดเจนขึ้น',
-        sug: sc1 < 3 ? 'ระบุกลุ่มครูและสิ่งที่ครูกังวล เช่น กลัวทำเครื่องรวน กลัวจำขั้นตอนไม่ได้ หรือกลัวเพิ่มงาน' : undefined
+        max: 2,
+        comment: sc1 === 2 ? 'ระบุกลุ่มครู หลักฐานจากคำพูดหรือการกระทำจริง และจำแนกสาเหตุหลักได้ตรงจุด' : 'ควรระบุหลักฐานคำพูดหรือการกระทำจริงของครูและจำแนกสาเหตุความกังวลให้ชัดเจน',
+        sug: sc1 < 2 ? 'ระบุสิ่งที่ครูเคยพูดหรือทำจริง 2–3 ข้อ และจำแนกสาเหตุหลักโดยไม่เหมารวมจากอายุ' : undefined
       },
       {
-        id: 'r10_quickwin',
-        title: 'การออกแบบ Quick Win ที่เห็นประโยชน์จริงและใช้ง่าย (TAM)',
+        id: 'r4_2_2',
+        title: '2. กิจกรรมตรงสาเหตุ',
         score: sc2,
-        max: 4,
-        comment: sc2 === 4 ? 'ออกแบบรูปแบบกิจกรรม ความถี่ และเทคนิค Quick Win ที่ใช้ง่ายและลดภาระงานได้ทันทีตามหลัก TAM' : 'ควรระบุรูปแบบกิจกรรม ความถี่ผู้รับผิดชอบ และรายละเอียด Quick Win ให้ครบถ้วน',
-        sug: sc2 < 4 ? 'ระบุทั้งรูปแบบกิจกรรมบรรยากาศเป็นกันเอง ความถี่ และเครื่องมือที่ช่วยให้เห็นผลสำเร็จในครั้งเดียว' : undefined
+        max: 3,
+        comment: sc2 === 3 ? 'ออกแบบ Quick Win ที่ลดงานเดิมใน 30 นาที และวางแผนกิจกรรม 3 ครั้งใน 3 เดือนพร้อมสิ่งที่ ผอ. ลดงานอื่นให้ครบถ้วน' : 'ควรระบุ Quick Win ที่ลดงานเดิม แผน 3 ครั้งใน 3 เดือน และสิ่งที่ ผอ. ลดงานให้ครูมีเวลาลอง',
+        sug: sc2 < 3 ? 'ระบุให้ครบทั้งครั้งที่ 1 (ข้อมูลสมมติ), ครั้งที่ 2 (งานจริงมีคู่หู), ครั้งที่ 3 (เพื่อนครูเล่าผลและ ผอ. ชื่นชม)' : undefined
       },
       {
-        id: 'r10_metrics',
-        title: 'ความชัดเจนของตัวชี้วัดความสำเร็จ',
+        id: 'r4_2_3',
+        title: '3. การปรับเมื่อไม่เป็นไปตามแผน',
         score: sc3,
+        max: 2,
+        comment: sc3 === 2 ? 'ตอบเหตุการณ์แทรกเมื่อครูต้นแบบย้ายโดยปรับแผนให้มีผู้ช่วยต่อและให้กำลังใจครูได้อย่างเหมาะสม' : 'ควรตอบเหตุการณ์แทรกโดยปรับแผนให้มีคู่หูคนใหม่หรือคลินิกสั้นๆ ช่วยครูต่อโดยไม่ยกเลิกกิจกรรม',
+        sug: sc3 < 2 ? 'ระบุการปรับแผน 1 จุดเพื่อให้ครูยังมีคนช่วยเมื่อครูต้นแบบย้าย และนัดหมายครั้งถัดไป' : undefined
+      },
+      {
+        id: 'r4_2_4',
+        title: '4. ตัวชี้วัด',
+        score: sc4,
         max: 3,
-        comment: sc3 === 3 ? 'กำหนดตัวชี้วัดความสำเร็จครบทั้งเชิงปริมาณและเชิงคุณภาพได้อย่างชัดเจน' : 'ควรระบุตัวชี้วัดให้ครบทั้งเชิงปริมาณ (จำนวน/ร้อยละ) และเชิงคุณภาพ (ความมั่นใจ/เจตคติ) โดยไม่ซ้ำกัน',
-        sug: sc3 < 3 ? 'กรอกตัวชี้วัดเชิงปริมาณ (เช่น ร้อยละของครูที่ทำสำเร็จ) และตัวชี้วัดเชิงคุณภาพ (เช่น ความมั่นใจที่เพิ่มขึ้น)' : undefined
+        comment: sc4 === 3 ? 'กำหนดตัวชี้วัดครบทั้งพฤติกรรมการใช้ที่นับได้และคะแนนความมั่นใจก่อน–หลัง พร้อมกรอบเวลาและวิธีเก็บข้อมูล' : 'ควรระบุตัวชี้วัดทั้งด้านพฤติกรรมที่นับได้และด้านความมั่นใจก่อน–หลัง (แบบวัด 5 ข้อ)',
+        sug: sc4 < 3 ? 'ระบุตัวชี้วัดพฤติกรรม (จำนวนคนที่ใช้จริงและหลักฐาน) และตัวชี้วัดความมั่นใจเทียบก่อน–หลัง' : undefined
       }
     ], data);
   }

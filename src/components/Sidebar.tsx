@@ -1,12 +1,12 @@
 import React from 'react';
 import type { StepId, UserProgress } from '../types';
-import { 
-  LayoutGrid, 
-  BookOpen, 
-  BarChart2, 
-  CheckSquare, 
-  Settings, 
-  LogOut, 
+import {
+  LayoutGrid,
+  BookOpen,
+  BarChart2,
+  CheckSquare,
+  Settings,
+  LogOut,
   Sparkles,
   Award,
   GraduationCap,
@@ -38,11 +38,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const completedUnitsCount = completedUnits.length;
   const pendingUnitsCount = Math.max(0, 10 - completedUnitsCount);
 
-  // ตรวจสอบสิทธิ์แต่ละเมนู
-  const isPreTestDone = completedSteps.includes('pre-test');
-  const isModulesUnlocked = isPreTestDone;
+  // ตรวจสอบสิทธิ์แต่ละเมนู (แต่ละหน่วยมีแบบวัดก่อน–หลังเรียนแยกในตัวแล้ว จึงเปิดให้เข้า 4 Modules ได้ทันที)
+  const isModulesUnlocked = true;
   const isAllModulesDone = completedUnitsCount >= 10;
-  const isPostTestDone = completedSteps.includes('post-test');
+  const isPostTestDone = isAllModulesDone || completedSteps.includes('post-test');
   const isEvaluationDone = completedSteps.includes('evaluation');
 
   return (
@@ -72,11 +71,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             type="button"
             onClick={() => onNavigate('flow')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all cursor-pointer ${
-              activeView === 'flow'
-                ? 'bg-slate-900 text-white shadow-md shadow-slate-900/10'
-                : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
-            }`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all cursor-pointer ${activeView === 'flow'
+              ? 'bg-slate-900 text-white shadow-md shadow-slate-900/10'
+              : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
+              }`}
           >
             <LayoutGrid className="w-5 h-5 shrink-0" />
             <span>Overview (ภาพรวม)</span>
@@ -96,13 +94,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onNavigate('level-1');
               }
             }}
-            className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all ${
-              !isModulesUnlocked
-                ? 'text-slate-400 opacity-60 cursor-not-allowed'
-                : activeView === 'step' && currentStep.startsWith('level-')
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all ${!isModulesUnlocked
+              ? 'text-slate-400 opacity-60 cursor-not-allowed'
+              : activeView === 'step' && currentStep.startsWith('level-')
                 ? 'bg-slate-900 text-white shadow-md shadow-slate-900/10 cursor-pointer'
                 : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50 cursor-pointer'
-            }`}
+              }`}
           >
             <div className="flex items-center gap-3">
               {isModulesUnlocked ? (
@@ -114,11 +111,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
             {isModulesUnlocked ? (
               pendingUnitsCount > 0 ? (
-                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                  activeView === 'step' && currentStep.startsWith('level-')
-                    ? 'bg-emerald-500 text-white'
-                    : 'bg-amber-500 text-white'
-                }`}>
+                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${activeView === 'step' && currentStep.startsWith('level-')
+                  ? 'bg-emerald-500 text-white'
+                  : 'bg-amber-500 text-white'
+                  }`}>
                   {completedUnitsCount}/10
                 </span>
               ) : (
@@ -129,32 +125,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
             )}
           </button>
 
-          {/* แบบทดสอบ (Pre-test & Post-test) */}
+          {/* แบบวัดก่อน–หลังเรียนประจำหน่วย (SJT คู่ขนาน ก/ข แยกในแต่ละหน่วย) */}
           <button
             type="button"
             onClick={() => {
-              if (isAllModulesDone) {
-                onNavigate('post-test');
+              if (currentStep.startsWith('level-')) {
+                onNavigate(currentStep);
               } else {
-                onNavigate('pre-test');
+                onNavigate('level-1');
               }
             }}
-            className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all cursor-pointer ${
-              activeView === 'step' && (currentStep === 'pre-test' || currentStep === 'post-test')
-                ? 'bg-slate-900 text-white shadow-md shadow-slate-900/10'
-                : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
-            }`}
+            className="w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all cursor-pointer text-slate-500 hover:text-slate-900 hover:bg-slate-50"
           >
             <div className="flex items-center gap-3">
               <BarChart2 className="w-5 h-5 shrink-0" />
-              <span>{isAllModulesDone ? 'แบบทดสอบหลังเรียน' : 'แบบทดสอบก่อนเรียน'}</span>
+              <span>แบบวัดประจำหน่วย</span>
             </div>
-            <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-              (isPreTestDone && !isAllModulesDone)
-                ? 'bg-emerald-100 text-emerald-800'
-                : 'bg-slate-100 text-slate-600'
-            }`}>
-              {isPreTestDone && !isAllModulesDone ? 'ทำแล้ว' : '10 ข้อ'}
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-200">
+              ก/ข แยกหน่วย
             </span>
           </button>
 
@@ -168,13 +156,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
               }
               onNavigate('evaluation');
             }}
-            className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all ${
-              !isPostTestDone
-                ? 'text-slate-400 opacity-60 cursor-not-allowed'
-                : activeView === 'step' && currentStep === 'evaluation'
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all ${!isPostTestDone
+              ? 'text-slate-400 opacity-60 cursor-not-allowed'
+              : activeView === 'step' && currentStep === 'evaluation'
                 ? 'bg-slate-900 text-white shadow-md shadow-slate-900/10 cursor-pointer'
                 : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50 cursor-pointer'
-            }`}
+              }`}
           >
             <div className="flex items-center gap-3">
               {isPostTestDone ? (
@@ -205,13 +192,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
               }
               onNavigate('completed');
             }}
-            className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all ${
-              !isEvaluationDone
-                ? 'text-slate-400 opacity-60 cursor-not-allowed'
-                : activeView === 'step' && currentStep === 'completed'
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all ${!isEvaluationDone
+              ? 'text-slate-400 opacity-60 cursor-not-allowed'
+              : activeView === 'step' && currentStep === 'completed'
                 ? 'bg-slate-900 text-white shadow-md shadow-slate-900/10 cursor-pointer'
                 : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50 cursor-pointer'
-            }`}
+              }`}
           >
             <div className="flex items-center gap-3">
               {isEvaluationDone ? (

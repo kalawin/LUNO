@@ -50,7 +50,7 @@ export class ApiService {
       }
     }
     return {
-      currentStep: 'pre-test',
+      currentStep: 'level-1',
       completedSteps: [],
       completedUnits: [],
       unitSubmissions: {},

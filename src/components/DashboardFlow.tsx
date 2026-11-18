@@ -26,7 +26,6 @@ export const DashboardFlow: React.FC<DashboardFlowProps> = ({ progress, profile,
   const [searchQuery, setSearchQuery] = useState('');
 
   const completedUnits = progress.completedUnits || [];
-  const completedSteps = progress.completedSteps || [];
   const completedCount = completedUnits.length;
   const overallPercent = Math.round((completedCount / 10) * 100);
 
@@ -46,8 +45,8 @@ export const DashboardFlow: React.FC<DashboardFlowProps> = ({ progress, profile,
   const m3Pct = Math.round((m3Done / 2) * 100);
   const m4Pct = Math.round((m4Done / 2) * 100);
 
-  // ตรวจสอบเงื่อนไขการปลดล็อกแต่ละ Module
-  const isM1Unlocked = completedSteps.includes('pre-test');
+  // ตรวจสอบเงื่อนไขการปลดล็อกแต่ละ Module (เข้าเรียนและทำแบบวัดก่อน-หลังเรียนประจำหน่วยได้ทันทีตั้งแต่ Module 1)
+  const isM1Unlocked = true;
   const isM2Unlocked = m1Done === 3;
   const isM3Unlocked = isM2Unlocked && m2Done === 3;
   const isM4Unlocked = isM3Unlocked && m3Done === 2;
@@ -57,8 +56,8 @@ export const DashboardFlow: React.FC<DashboardFlowProps> = ({ progress, profile,
       id: 'level-1' as StepId,
       code: 'Module 1',
       title: 'การสื่อสารเชิงดิจิทัล (Digital Communication)',
-      desc: 'หน่วย 1.1, 1.2, 1.3 · แผนสื่อสาร 4 ช่อง เครือข่ายพันธมิตร และภาพลักษณ์ PDPA',
-      duration: '3.2 ชม.',
+      desc: 'หน่วย 1.1, 1.2, 1.3 · แผนสื่อสาร 4 ช่อง เครือข่ายพันธมิตรสองทาง และภาพลักษณ์ตามหลัก PDPA & ลิขสิทธิ์ (พร้อมแบบวัด ก/ข ประจำหน่วย)',
+      duration: '243 นาที (4.05 ชม.)',
       colorBg: 'bg-[#fff9e6]',
       colorBorder: 'border-[#fdeec3]',
       barColor: 'bg-amber-400',
@@ -67,14 +66,14 @@ export const DashboardFlow: React.FC<DashboardFlowProps> = ({ progress, profile,
       doneCount: m1Done,
       totalCount: 3,
       isUnlocked: isM1Unlocked,
-      lockMsg: 'ต้องทำ Pre-test ให้เสร็จสิ้นก่อน'
+      lockMsg: 'พร้อมเข้าเรียนทันที'
     },
     {
       id: 'level-2' as StepId,
       code: 'Module 2',
       title: 'การสร้างวิถีการเรียนรู้เชิงดิจิทัล (Digital Learning Culture)',
-      desc: 'หน่วย 2.1, 2.2, 2.3 · แผนโค้ชครู 3 ครั้ง สภาพแวดล้อม Quick Wins และ Data Decision',
-      duration: '2.8 ชม.',
+      desc: 'หน่วย 2.1, 2.2, 2.3 · โค้ชครู 3 ครั้ง ประเมินความพร้อมสภาพแวดล้อม 3 ด้าน และใช้ข้อมูลจากแบบฟอร์มตัดสินใจ (พร้อมแบบวัด ก/ข ประจำหน่วย)',
+      duration: '273 นาที (4.55 ชม.)',
       colorBg: 'bg-[#f4f3ff]',
       colorBorder: 'border-[#e4dfff]',
       barColor: 'bg-indigo-500',
@@ -88,9 +87,9 @@ export const DashboardFlow: React.FC<DashboardFlowProps> = ({ progress, profile,
     {
       id: 'level-3' as StepId,
       code: 'Module 3',
-      title: 'การพัฒนาด้านการทำงานเป็นทีมสู่ความเป็นมืออาชีพ (Professional Teamwork)',
-      desc: 'หน่วย 3.1, 3.2 · Micro-journal ผู้นำต้นแบบ 1 วัน และผังการทำงานทีมบน Cloud',
-      duration: '1.2 ชม.',
+      title: 'การพัฒนาสู่ความเป็นมืออาชีพ (Professional Teamwork)',
+      desc: 'หน่วย 3.1, 3.2 · ผู้นำต้นแบบและการตรวจข้อมูล/AI พร้อมผังการทำงานทีมและวงรอบ PLC ออนไลน์ (พร้อมแบบวัด ก/ข ประจำหน่วย)',
+      duration: '155 นาที (2.58 ชม.)',
       colorBg: 'bg-[#eaf8f5]',
       colorBorder: 'border-[#d2f1eb]',
       barColor: 'bg-teal-500',
@@ -105,8 +104,8 @@ export const DashboardFlow: React.FC<DashboardFlowProps> = ({ progress, profile,
       id: 'level-4' as StepId,
       code: 'Module 4',
       title: 'การสร้างค่านิยมเชิงดิจิทัล (Digital Values & Culture)',
-      desc: 'หน่วย 4.1, 4.2 · วิสัยทัศน์ดิจิทัล 3-4 ประโยค และกิจกรรมสร้างแรงจูงใจ TAM Model',
-      duration: '1.5 ชม.',
+      desc: 'หน่วย 4.1, 4.2 · วิสัยทัศน์ดิจิทัลที่บอกผลต่อผู้เรียนและแผนสร้างแรงจูงใจ 3 เดือนตามหลัก TAM (พร้อมแบบวัด ก/ข ประจำหน่วย)',
+      duration: '157 นาที (2.62 ชม.)',
       colorBg: 'bg-[#fff2f0]',
       colorBorder: 'border-[#fde2de]',
       barColor: 'bg-rose-500',

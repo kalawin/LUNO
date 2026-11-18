@@ -1,19 +1,11 @@
 import React, { useState } from 'react';
 import type { UserProfile, UnitSubmission } from '../types';
 import { ApiService } from '../services/api';
-import { UNITS_DATA } from '../data/modulesData';
-import { ActivityFlowContainer } from './ActivityFlowContainer';
 import { Unit1_1Interactive } from './Unit1_1Interactive';
+import { UnifiedUnitInteractive } from './UnifiedUnitInteractive';
+import { UNIT_1_2_BLUEPRINT, UNIT_1_3_BLUEPRINT } from '../data/unit1_2_to_1_3Data';
 import { CurriculumModal } from './CurriculumModal';
-import { 
-  CheckCircle2, 
-  BookOpen, 
-  ArrowRight, 
-  Users, 
-  ShieldCheck, 
-  Send, 
-  Lock
-} from 'lucide-react';
+import { CheckCircle2, BookOpen, ArrowRight, Lock } from 'lucide-react';
 
 interface Props {
   onPassLevel: () => void;
@@ -28,34 +20,6 @@ export const Level1Interactive: React.FC<Props> = ({ onPassLevel, onBackToDashbo
   const [submissions, setSubmissions] = useState<Record<string, UnitSubmission>>(() => {
     const prog = ApiService.getLocalProgress();
     return prog.unitSubmissions || {};
-  });
-
-  // State ฟอร์มของหน่วย 1.2 (เครือข่ายพันธมิตร)
-  const [form1_2, setForm1_2] = useState(() => {
-    const saved = submissions['1.2']?.formData || {};
-    return {
-      networkInternal: saved['เครือข่ายภายในโรงเรียน'] || '',
-      networkParents: saved['เครือข่ายผู้ปกครอง'] || '',
-      networkCommunity: saved['เครือข่ายชุมชนและท้องถิ่น'] || '',
-      networkExternal: saved['เครือข่ายภายนอก'] || '',
-      inquiryCase: saved['ข้อกังวลจากพันธมิตร'] || '',
-      responseCase: saved['ข้อความตอบกลับของผู้บริหาร'] || ''
-    };
-  });
-
-  // State ฟอร์มของหน่วย 1.3 (ภาพลักษณ์และ PDPA)
-  const [form1_3, setForm1_3] = useState(() => {
-    const saved = submissions['1.3']?.formData || {};
-    return {
-      mediaTitle: saved['หัวข้อประชาสัมพันธ์'] || '',
-      mediaHighlight: saved['จุดเด่นที่ต้องการสื่อสาร'] || '',
-      pdpaCheck1: saved['ตรวจ_ไม่ระบุเลขบัตรประชาชน_ที่อยู่'] ?? false,
-      pdpaCheck2: saved['ตรวจ_เบลอชื่อเด็กหรือใช้ชื่อเล่น'] ?? false,
-      pdpaCheck3: saved['ตรวจ_มีหนังสือยินยอมจากผู้ปกครอง'] ?? false,
-      pdpaCheck4: saved['ตรวจ_ใช้ภาพถ่ายโรงเรียนหรือภาพฟรีลิขสิทธิ์'] ?? false,
-      pdpaCheck5: saved['ตรวจ_มีข้อความคุ้มครองข้อมูลส่วนบุคคล'] ?? false,
-      consentNote: saved['ข้อความขอความยินยอม'] || ''
-    };
   });
 
   const isCompleted1_1 = !!submissions['1.1'];
@@ -80,7 +44,6 @@ export const Level1Interactive: React.FC<Props> = ({ onPassLevel, onBackToDashbo
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-16">
-      {/* Top Banner Navigation between Sub-units (Soft Modern Light Style) */}
       <div className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
           <div>
@@ -93,7 +56,7 @@ export const Level1Interactive: React.FC<Props> = ({ onPassLevel, onBackToDashbo
               </h1>
             </div>
             <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
-              พัฒนาทักษะการวางแผนสื่อสาร 4 ช่อง การสร้างเครือข่ายพันธมิตร และการสื่อสารภาพลักษณ์ที่ปลอดภัยตาม PDPA
+              พัฒนาทักษะการวางแผนสื่อสาร 4 ช่อง การสร้างเครือข่ายพันธมิตรสองทาง และการสื่อสารภาพลักษณ์ตามหลัก PDPA และลิขสิทธิ์ (พร้อมแบบวัดก่อน–หลังเรียนประจำหน่วย)
             </p>
           </div>
 
@@ -106,9 +69,7 @@ export const Level1Interactive: React.FC<Props> = ({ onPassLevel, onBackToDashbo
           </button>
         </div>
 
-        {/* Sub-unit Tabs */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4">
-          {/* Tab 1.1 */}
           <button
             type="button"
             onClick={() => setActiveUnitId('1.1')}
@@ -131,12 +92,11 @@ export const Level1Interactive: React.FC<Props> = ({ onPassLevel, onBackToDashbo
             <div className="text-sm font-extrabold text-slate-900">การวางแผนในการสื่อสาร</div>
           </button>
 
-          {/* Tab 1.2 */}
           <button
             type="button"
             onClick={() => {
               if (!isCompleted1_1) {
-                alert('🔒 กรุณาทำแบบฝึกหัดหน่วย 1.1 ให้ผ่านเกณฑ์ก่อนเข้าสู่หน่วย 1.2 ครับ');
+                alert('🔒 กรุณาทำกิจกรรมและส่งงานหน่วย 1.1 ให้เรียบร้อยก่อนเข้าสู่หน่วย 1.2 ครับ');
                 return;
               }
               setActiveUnitId('1.2');
@@ -150,7 +110,7 @@ export const Level1Interactive: React.FC<Props> = ({ onPassLevel, onBackToDashbo
             }`}
           >
             <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-bold text-amber-800">หน่วย 1.2 (60 น.)</span>
+              <span className="text-xs font-bold text-amber-800">หน่วย 1.2 (76 น.)</span>
               {isCompleted1_2 ? (
                 <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-700">
                   <CheckCircle2 className="w-3.5 h-3.5" /> ผ่านแล้ว ({submissions['1.2']?.totalScore}/10)
@@ -166,12 +126,11 @@ export const Level1Interactive: React.FC<Props> = ({ onPassLevel, onBackToDashbo
             <div className="text-sm font-extrabold text-slate-900">การสร้างเครือข่ายพันธมิตร</div>
           </button>
 
-          {/* Tab 1.3 */}
           <button
             type="button"
             onClick={() => {
               if (!isCompleted1_2) {
-                alert('🔒 กรุณาทำแบบฝึกหัดหน่วย 1.2 ให้ผ่านเกณฑ์ก่อนเข้าสู่หน่วย 1.3 ครับ');
+                alert('🔒 กรุณาทำกิจกรรมและส่งงานหน่วย 1.2 ให้เรียบร้อยก่อนเข้าสู่หน่วย 1.3 ครับ');
                 return;
               }
               setActiveUnitId('1.3');
@@ -185,7 +144,7 @@ export const Level1Interactive: React.FC<Props> = ({ onPassLevel, onBackToDashbo
             }`}
           >
             <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-bold text-amber-800">หน่วย 1.3 (90 น.)</span>
+              <span className="text-xs font-bold text-amber-800">หน่วย 1.3 (106 น.)</span>
               {isCompleted1_3 ? (
                 <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-700">
                   <CheckCircle2 className="w-3.5 h-3.5" /> ผ่านแล้ว ({submissions['1.3']?.totalScore}/10)
@@ -198,12 +157,11 @@ export const Level1Interactive: React.FC<Props> = ({ onPassLevel, onBackToDashbo
                 <span className="text-[11px] text-slate-400">พร้อมทำ</span>
               )}
             </div>
-            <div className="text-sm font-extrabold text-slate-900">การสื่อสารภาพลักษณ์และ PDPA</div>
+            <div className="text-sm font-extrabold text-slate-900">การสื่อสารภาพลักษณ์ผ่านสื่อ</div>
           </button>
         </div>
       </div>
 
-      {/* Module 1 Completion Celebration Card */}
       {allCompleted && (
         <div className="bg-[#eef8f5] border border-[#d2f0e6] rounded-3xl p-6 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
@@ -228,7 +186,6 @@ export const Level1Interactive: React.FC<Props> = ({ onPassLevel, onBackToDashbo
         </div>
       )}
 
-      {/* RENDER ACTIVE SUB-UNIT */}
       {activeUnitId === '1.1' && (
         <Unit1_1Interactive
           profile={profile}
@@ -240,239 +197,30 @@ export const Level1Interactive: React.FC<Props> = ({ onPassLevel, onBackToDashbo
       )}
 
       {activeUnitId === '1.2' && (
-        <ActivityFlowContainer
-          unit={UNITS_DATA['1.2']}
+        <UnifiedUnitInteractive
+          blueprint={UNIT_1_2_BLUEPRINT}
           profile={profile}
           existingSubmission={submissions['1.2']}
-          formData={{
-            'เครือข่ายภายในโรงเรียน': form1_2.networkInternal,
-            'เครือข่ายผู้ปกครอง': form1_2.networkParents,
-            'เครือข่ายชุมชนและท้องถิ่น': form1_2.networkCommunity,
-            'เครือข่ายภายนอก': form1_2.networkExternal,
-            'ข้อกังวลจากพันธมิตร': form1_2.inquiryCase,
-            'ข้อความตอบกลับของผู้บริหาร': form1_2.responseCase
-          }}
-          isStep4Valid={
-            !!form1_2.networkInternal.trim() &&
-            !!form1_2.networkParents.trim() &&
-            !!form1_2.networkCommunity.trim() &&
-            !!form1_2.networkExternal.trim() &&
-            !!form1_2.inquiryCase.trim() &&
-            !!form1_2.responseCase.trim()
-          }
+          allSubmissions={submissions}
           onSubmitUnit={handleUnitSubmit}
           onNextUnit={() => handleNextUnitFrom('1.2')}
           onBackToDashboard={onBackToDashboard}
-          childrenStep4={
-            <div className="space-y-4">
-              <div className="bg-slate-50/80 border border-slate-200/90 rounded-3xl p-6 space-y-4">
-                <div className="font-extrabold text-slate-900 text-base flex items-center gap-2">
-                  <Users className="w-5 h-5 text-amber-600" /> 1. ผังเครือข่ายพันธมิตร 4 ทิศทาง
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">ภายใน (ครู/บุคลากร + ช่องทาง):</label>
-                    <input
-                      type="text"
-                      value={form1_2.networkInternal}
-                      placeholder="ระบุกลุ่มบุคลากรภายในโรงเรียน และช่องทางดิจิทัลที่ใช้ประสานงาน..."
-                      onChange={(e) => setForm1_2({ ...form1_2, networkInternal: e.target.value })}
-                      className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-2 text-sm text-slate-900"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">ผู้ปกครองและนักเรียน (+ ช่องทาง):</label>
-                    <input
-                      type="text"
-                      value={form1_2.networkParents}
-                      placeholder="ระบุกลุ่มผู้ปกครอง/นักเรียน และช่องทางที่ใช้สื่อสารแลกเปลี่ยน..."
-                      onChange={(e) => setForm1_2({ ...form1_2, networkParents: e.target.value })}
-                      className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-2 text-sm text-slate-900"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">ชุมชน/ท้องถิ่น/อบต. (+ ช่องทาง):</label>
-                    <input
-                      type="text"
-                      value={form1_2.networkCommunity}
-                      placeholder="ระบุหน่วยงานท้องถิ่น/ผู้นำชุมชน และช่องทางที่ใช้เชื่อมโยง..."
-                      onChange={(e) => setForm1_2({ ...form1_2, networkCommunity: e.target.value })}
-                      className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-2 text-sm text-slate-900"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">ภายนอก/ศิษย์เก่า/เอกชน (+ ช่องทาง):</label>
-                    <input
-                      type="text"
-                      value={form1_2.networkExternal}
-                      placeholder="ระบุเครือข่ายภายนอก/ศิษย์เก่า และช่องทางประชาสัมพันธ์..."
-                      onChange={(e) => setForm1_2({ ...form1_2, networkExternal: e.target.value })}
-                      className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-2 text-sm text-slate-900"
-                    />
-                  </div>
-                </div>
-
-                <div className="pt-3 border-t border-slate-200">
-                  <div className="font-extrabold text-slate-900 text-base flex items-center gap-2 mb-3">
-                    <Send className="w-5 h-5 text-amber-600" /> 2. การจำลองสื่อสารสองทาง (Two-Way Communication)
-                  </div>
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">ข้อคำถาม หรือข้อกังวลที่ได้รับจากพันธมิตร 1 กรณี:</label>
-                      <input
-                        type="text"
-                        value={form1_2.inquiryCase}
-                        placeholder="ระบุประเด็นคำถามหรือข้อกังวลจากผู้ปกครอง/ชุมชนที่ต้องการชี้แจง..."
-                        onChange={(e) => setForm1_2({ ...form1_2, inquiryCase: e.target.value })}
-                        className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-2 text-sm text-slate-900"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">ข้อความตอบกลับของผู้บริหาร (แสดงการรับฟัง สุภาพ และสร้างความมั่นใจ):</label>
-                      <textarea
-                        rows={3}
-                        value={form1_2.responseCase}
-                        placeholder="ร่างข้อความตอบกลับตามหลัก 4 ขั้นตอน (ขอบคุณ-ชี้แจงข้อเท็จจริง-แนวทางพัฒนา-เชิญชวนมีส่วนร่วม)..."
-                        onChange={(e) => setForm1_2({ ...form1_2, responseCase: e.target.value })}
-                        className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          }
         />
       )}
 
       {activeUnitId === '1.3' && (
-        <ActivityFlowContainer
-          unit={UNITS_DATA['1.3']}
+        <UnifiedUnitInteractive
+          blueprint={UNIT_1_3_BLUEPRINT}
           profile={profile}
           existingSubmission={submissions['1.3']}
-          formData={{
-            'หัวข้อประชาสัมพันธ์': form1_3.mediaTitle,
-            'จุดเด่นที่ต้องการสื่อสาร': form1_3.mediaHighlight,
-            'ตรวจ_ไม่ระบุเลขบัตรประชาชน_ที่อยู่': form1_3.pdpaCheck1,
-            'ตรวจ_เบลอชื่อเด็กหรือใช้ชื่อเล่น': form1_3.pdpaCheck2,
-            'ตรวจ_มีหนังสือยินยอมจากผู้ปกครอง': form1_3.pdpaCheck3,
-            'ตรวจ_ใช้ภาพถ่ายโรงเรียนหรือภาพฟรีลิขสิทธิ์': form1_3.pdpaCheck4,
-            'ตรวจ_มีข้อความคุ้มครองข้อมูลส่วนบุคคล': form1_3.pdpaCheck5,
-            'ข้อความขอความยินยอม': form1_3.consentNote
-          }}
-          isStep4Valid={
-            !!form1_3.mediaTitle.trim() &&
-            !!form1_3.mediaHighlight.trim() &&
-            !!form1_3.consentNote.trim() &&
-            form1_3.pdpaCheck3
-          }
+          allSubmissions={submissions}
           onSubmitUnit={handleUnitSubmit}
+          onNextUnit={onPassLevel}
           onBackToDashboard={onBackToDashboard}
-          childrenStep4={
-            <div className="space-y-4">
-              <div className="bg-slate-50/80 border border-slate-200/90 rounded-3xl p-6 space-y-4">
-                <div className="font-extrabold text-slate-900 text-base flex items-center gap-2">
-                  <ShieldCheck className="w-5 h-5 text-amber-600" /> ออกแบบสื่อและตรวจสอบมาตรฐาน PDPA / ลิขสิทธิ์
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">หัวข้อสื่อประชาสัมพันธ์โรงเรียน:</label>
-                  <input
-                    type="text"
-                    value={form1_3.mediaTitle}
-                    placeholder="ระบุชื่อหัวข้อข่าวหรือกิจกรรมประชาสัมพันธ์ของโรงเรียนท่าน..."
-                    onChange={(e) => setForm1_3({ ...form1_3, mediaTitle: e.target.value })}
-                    className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-2 text-sm text-slate-900"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">จุดเด่นที่ต้องการสื่อสาร (Storytelling):</label>
-                  <textarea
-                    rows={2}
-                    value={form1_3.mediaHighlight}
-                    placeholder="อธิบายคุณค่าของกิจกรรม พัฒนาการที่เกิดขึ้นกับผู้เรียน และช่องทางที่จะนำไปเผยแพร่..."
-                    onChange={(e) => setForm1_3({ ...form1_3, mediaHighlight: e.target.value })}
-                    className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-2 text-sm text-slate-900"
-                  />
-                </div>
-
-                <div className="pt-2">
-                  <div className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4 text-emerald-600" /> ตรวจสอบ Checklist PDPA 5 ข้อ (คลิกเพื่อยืนยัน):
-                  </div>
-                  <div className="space-y-2 bg-white p-4 rounded-2xl border border-slate-200 text-xs text-slate-700">
-                    <label className="flex items-center gap-2.5 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={form1_3.pdpaCheck1}
-                        onChange={(e) => setForm1_3({ ...form1_3, pdpaCheck1: e.target.checked })}
-                        className="rounded text-teal-600 focus:ring-teal-500"
-                      />
-                      <span>1. ไม่เปิดเผยเลขประจำตัวประชาชน ที่อยู่ หรือเกรดเฉลี่ยของนักเรียน</span>
-                    </label>
-                    <label className="flex items-center gap-2.5 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={form1_3.pdpaCheck2}
-                        onChange={(e) => setForm1_3({ ...form1_3, pdpaCheck2: e.target.checked })}
-                        className="rounded text-teal-600 focus:ring-teal-500"
-                      />
-                      <span>2. เบลอชื่อ-นามสกุลจริงบนป้ายชื่อ หรือใช้ชื่อเล่น/ภาพมุมกว้าง</span>
-                    </label>
-                    <label className="flex items-center gap-2.5 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={form1_3.pdpaCheck3}
-                        onChange={(e) => setForm1_3({ ...form1_3, pdpaCheck3: e.target.checked })}
-                        className="rounded text-teal-600 focus:ring-teal-500"
-                      />
-                      <span>3. มีหนังสือขอความยินยอม (Consent) จากผู้ปกครองในการเผยแพร่ภาพถ่าย</span>
-                    </label>
-                    <label className="flex items-center gap-2.5 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={form1_3.pdpaCheck4}
-                        onChange={(e) => setForm1_3({ ...form1_3, pdpaCheck4: e.target.checked })}
-                        className="rounded text-teal-600 focus:ring-teal-500"
-                      />
-                      <span>4. ใช้ภาพถ่ายของโรงเรียนเอง หรือภาพฟรีที่มีสัญญาอนุญาต Commercial Use</span>
-                    </label>
-                    <label className="flex items-center gap-2.5 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={form1_3.pdpaCheck5}
-                        onChange={(e) => setForm1_3({ ...form1_3, pdpaCheck5: e.target.checked })}
-                        className="rounded text-teal-600 focus:ring-teal-500"
-                      />
-                      <span>5. มีข้อความระบุการคุ้มครองข้อมูลส่วนบุคคลแนบท้ายสื่อ</span>
-                    </label>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    ร่างข้อความขอความยินยอม (Consent Note) สั้นๆ:
-                  </label>
-                  <input
-                    type="text"
-                    value={form1_3.consentNote}
-                    placeholder="ร่างข้อความแจ้งการขอความยินยอมจากผู้ปกครองและวัตถุประสงค์การเผยแพร่ตามหลัก PDPA..."
-                    onChange={(e) => setForm1_3({ ...form1_3, consentNote: e.target.value })}
-                    className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-2 text-sm text-slate-900"
-                  />
-                </div>
-              </div>
-            </div>
-          }
         />
       )}
 
-      <CurriculumModal
-        isOpen={showCurriculumModal}
-        onClose={() => setShowCurriculumModal(false)}
-      />
+      <CurriculumModal isOpen={showCurriculumModal} onClose={() => setShowCurriculumModal(false)} />
     </div>
   );
 };

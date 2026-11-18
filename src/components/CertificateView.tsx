@@ -19,10 +19,38 @@ export const CertificateView: React.FC<CertificateViewProps> = ({ profile, progr
   const radarChartRef = useRef<HTMLCanvasElement | null>(null);
   const chartInstances = useRef<{ bar?: Chart; radar?: Chart }>({});
 
-  const maxPre = PRE_TEST_QUESTIONS.length || 10;
-  const maxPost = POST_TEST_QUESTIONS.length || 10;
-  const pre = progress.preTestScore ?? 0;
-  const post = progress.postTestScore ?? maxPost;
+  const unitScores = (() => {
+    const allIds = ['1.1', '1.2', '1.3', '2.1', '2.2', '2.3', '3.1', '3.2', '4.1', '4.2'];
+    const email = profile.id || profile.name || 'guest';
+    let sumPre = 0;
+    let sumPost = 0;
+    let countSjt = 0;
+    for (const id of allIds) {
+      try {
+        const k2 = `luno_unit_${id}_state_v2_${email}`;
+        const k1 = `luno_unit1_1_state_v2_${email}`;
+        const raw = localStorage.getItem(id === '1.1' ? k1 : k2) || localStorage.getItem(k2);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          const preVal = typeof parsed.preScoreTotal === 'number' ? parsed.preScoreTotal : parsed.pretestScore;
+          const postVal = typeof parsed.postScoreTotal === 'number' ? parsed.postScoreTotal : parsed.posttestScore;
+          if (typeof preVal === 'number' || typeof postVal === 'number') {
+            sumPre += Number(preVal || 0);
+            sumPost += Number(postVal || 0);
+            countSjt++;
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return { sumPre, sumPost, countSjt };
+  })();
+
+  const maxPre = unitScores.countSjt > 0 ? 90 : PRE_TEST_QUESTIONS.length || 10;
+  const maxPost = unitScores.countSjt > 0 ? 90 : POST_TEST_QUESTIONS.length || 10;
+  const pre = unitScores.countSjt > 0 ? unitScores.sumPre : progress.preTestScore ?? 0;
+  const post = unitScores.countSjt > 0 ? unitScores.sumPost : progress.postTestScore ?? maxPost;
   const diff = post - pre;
   const growthPct = Math.round((diff / maxPost) * 100);
 
