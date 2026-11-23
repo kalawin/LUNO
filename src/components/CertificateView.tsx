@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import type { UserProfile, UserProgress } from '../types';
 import { PRE_TEST_QUESTIONS, POST_TEST_QUESTIONS } from '../data/courseData';
-import { Award, Printer, TrendingUp, BarChart3, Radar, Home, GraduationCap, CheckCircle2 } from 'lucide-react';
+import { Award, Printer, TrendingUp, BarChart3, Radar, Home, CheckCircle2 } from 'lucide-react';
 import { Chart, BarController, BarElement, CategoryScale, LinearScale, RadarController, RadialLinearScale, PointElement, LineElement, Tooltip, Legend, Filler } from 'chart.js';
 import { printElementById } from '../utils/printHelper';
 
@@ -172,9 +172,10 @@ export const CertificateView: React.FC<CertificateViewProps> = ({ profile, progr
       });
     }
 
+    const currentCharts = chartInstances.current;
     return () => {
-      if (chartInstances.current.bar) chartInstances.current.bar.destroy();
-      if (chartInstances.current.radar) chartInstances.current.radar.destroy();
+      if (currentCharts.bar) currentCharts.bar.destroy();
+      if (currentCharts.radar) currentCharts.radar.destroy();
     };
   }, [pre, post, maxPost]);
 
@@ -274,7 +275,7 @@ export const CertificateView: React.FC<CertificateViewProps> = ({ profile, progr
       {/* Certificate Printable Card (A4 Landscape: 297mm x 210mm) */}
       <div
         id="certificate-printable"
-        className="relative overflow-hidden w-full max-w-[297mm] md:aspect-[297/210] mx-auto rounded-[20px] p-8 sm:p-14 bg-[#fcfdfa] border-[8px] border-[#0f172a] shadow-xl text-center text-slate-900 flex flex-col justify-between print:rounded-none print:shadow-none print:border-[6px] print:m-0"
+        className="relative overflow-hidden w-full max-w-[297mm] md:aspect-[297/210] mx-auto rounded-[20px] p-8 sm:p-12 bg-[#fcfdfa] border-[8px] border-[#0f172a] shadow-xl text-center text-slate-900 flex flex-col justify-between print:rounded-none print:shadow-none print:border-[6px] print:m-0"
       >
         {/* Inner Gold Border */}
         <div className="absolute inset-2.5 sm:inset-3.5 border-2 border-amber-600/60 rounded-xl pointer-events-none" />
@@ -285,15 +286,46 @@ export const CertificateView: React.FC<CertificateViewProps> = ({ profile, progr
         <div className="absolute bottom-4 left-4 w-8 sm:w-12 h-8 sm:h-12 border-b-2 border-l-2 border-amber-600 pointer-events-none" />
         <div className="absolute bottom-4 right-4 w-8 sm:w-12 h-8 sm:h-12 border-b-2 border-r-2 border-amber-600 pointer-events-none" />
 
-        <div className="max-w-3xl mx-auto w-full flex-1 flex flex-col justify-between relative z-10 py-2">
-          <div className="space-y-3 sm:space-y-4">
-            {/* Crest / Logo */}
-            <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-amber-500 to-yellow-400 flex items-center justify-center text-white mx-auto shadow-md shadow-amber-500/20 border-2 border-amber-300">
-              <GraduationCap className="w-9 h-9" />
+        <div className="max-w-4xl mx-auto w-full flex-1 flex flex-col justify-between relative z-10 py-1">
+          {/* Top Institutional Logos Area (KKU / Faculty of Education KKU / OBEC Khon Kaen Area 1) */}
+          <div className="space-y-2.5 sm:space-y-3">
+            <div className="flex items-center justify-center gap-6 sm:gap-10 pt-1">
+              <div className="flex flex-col items-center">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white p-1.5 shadow-xs border border-amber-200/80 flex items-center justify-center">
+                  <img
+                    src="/logos/kku-logo.png"
+                    alt="ตราสัญลักษณ์มหาวิทยาลัยขอนแก่น"
+                    className="max-w-full max-h-full object-contain"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white p-1.5 shadow-xs border border-amber-200/80 flex items-center justify-center">
+                  <img
+                    src="/logos/ed-kku-logo.jpg"
+                    alt="ตราสัญลักษณ์คณะศึกษาศาสตร์ มหาวิทยาลัยขอนแก่น"
+                    className="max-w-full max-h-full object-contain"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white p-1.5 shadow-xs border border-amber-200/80 flex items-center justify-center">
+                  <img
+                    src="/logos/obec-logo.jpg"
+                    alt="ตราสัญลักษณ์สำนักงานคณะกรรมการการศึกษาขั้นพื้นฐาน สพป.ขอนแก่น เขต 1"
+                    className="max-w-full max-h-full object-contain"
+                  />
+                </div>
+              </div>
             </div>
 
-            <div className="text-xs sm:text-sm uppercase tracking-widest text-slate-500 font-extrabold">
-              คณะศึกษาศาสตร์ มหาวิทยาลัยขอนแก่น ร่วมกับ สพป.ขอนแก่น เขต 1
+            <div className="text-xs sm:text-sm tracking-wide text-slate-600 font-extrabold leading-snug">
+              มหาวิทยาลัยขอนแก่น • คณะศึกษาศาสตร์ มหาวิทยาลัยขอนแก่น
+              <br className="sm:hidden" />
+              <span className="hidden sm:inline"> • </span>
+              สำนักงานคณะกรรมการการศึกษาขั้นพื้นฐาน (สพป.ขอนแก่น เขต 1)
             </div>
 
             <h2 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
@@ -301,12 +333,12 @@ export const CertificateView: React.FC<CertificateViewProps> = ({ profile, progr
             </h2>
           </div>
 
-          <div className="space-y-3 my-4">
+          <div className="space-y-2.5 my-3">
             <p className="text-xs sm:text-sm text-slate-500">
               ขอมอบเกียรติบัตรฉบับนี้ให้ไว้เพื่อแสดงว่า
             </p>
 
-            <div className="text-2xl sm:text-4xl font-black text-slate-900 border-b-2 border-amber-500/80 pb-2 inline-block min-w-[300px] px-6">
+            <div className="text-2xl sm:text-4xl font-black text-slate-900 border-b-2 border-amber-500/80 pb-2 inline-block min-w-[300px] px-8">
               {profile.name}
             </div>
 
@@ -316,13 +348,13 @@ export const CertificateView: React.FC<CertificateViewProps> = ({ profile, progr
 
             <p className="text-xs sm:text-sm text-slate-600 max-w-2xl mx-auto leading-relaxed pt-1">
               ได้ผ่านการพัฒนาภาวะผู้นำดิจิทัลของผู้บริหารสถานศึกษาขนาดเล็ก ครบทั้ง 4 โมดูล 10 หน่วยการเรียนรู้
-              (การสื่อสารดิจิทัล, การออกแบบวิถีการเรียนรู้, การพัฒนาด้านการทำงานเป็นทีมสู่ความเป็นมืออาชีพ, การสร้างค่านิยมดิจิทัล)
+              (การสื่อสารเชิงดิจิทัล, การสร้างวิถีการเรียนรู้เชิงดิจิทัล, การพัฒนาสู่ความเป็นมืออาชีพ, การสร้างค่านิยมเชิงดิจิทัล)
               ตามเกณฑ์มาตรฐานโปรแกรม LUNO เป็นผลสำเร็จสมบูรณ์
             </p>
           </div>
 
           {/* Bottom signatures and certification info */}
-          <div className="pt-5 flex justify-between items-end text-xs text-slate-500 border-t border-slate-200 mt-4 px-4">
+          <div className="pt-4 flex justify-between items-end text-xs text-slate-500 border-t border-slate-200 mt-2 px-4">
             <div className="text-left space-y-1">
               <div className="font-bold text-teal-800">รหัสรับรอง: {certCode}</div>
               <div className="text-slate-500">ออกให้ ณ วันที่ {certDate}</div>

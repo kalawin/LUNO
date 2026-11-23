@@ -20,6 +20,13 @@ import type { UserProfile, UnitSubmission } from '../types';
 import { UNITS_DATA } from '../data/modulesData';
 import { EvaluatorEngine, type UnitEvaluationResult } from '../utils/evaluatorEngine';
 import { ArtifactPdfModal } from './ArtifactPdfModal';
+import {
+  InteractiveUnitVideoCard,
+  VoiceNarratorButton,
+  UnitStep1VisualMockup,
+  UnitStep2VisualInfographic,
+  UnitStep3VisualMockup
+} from './UnitRichMediaPanel';
 
 interface UnifiedUnitInteractiveProps {
   blueprint: UnitBlueprintConfig;
@@ -871,12 +878,21 @@ export const UnifiedUnitInteractive: React.FC<UnifiedUnitInteractiveProps> = ({
          ===================================================================== */}
       {activeStage === 'step1' && (
         <div className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
-          <div>
-            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#2563EB' }}>
-              ขั้นที่ 1: เปิดสถานการณ์ ({blueprint.step1.timeText})
-            </span>
-            <h4 style={{ margin: '4px 0', fontSize: '1.15rem', fontWeight: 800 }}>เป้าหมาย: {blueprint.step1.goalText}</h4>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px' }}>
+            <div>
+              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#2563EB' }}>
+                ขั้นที่ 1: เปิดสถานการณ์ ({blueprint.step1.timeText})
+              </span>
+              <h4 style={{ margin: '4px 0', fontSize: '1.15rem', fontWeight: 800 }}>เป้าหมาย: {blueprint.step1.goalText}</h4>
+            </div>
+            <VoiceNarratorButton
+              text={`${blueprint.step1.contextTitle} ${blueprint.step1.contextDescription} คำถามคือ ${blueprint.step1.questionPrompt}`}
+              label="ฟังเสียงสถานการณ์"
+            />
           </div>
+
+          {/* หน้าจอจำลองสถานการณ์จริง (Facebook / แผนผัง / กราฟ Dashboard) */}
+          <UnitStep1VisualMockup unitId={unitId} />
 
           <div
             style={{
@@ -1046,6 +1062,12 @@ export const UnifiedUnitInteractive: React.FC<UnifiedUnitInteractiveProps> = ({
             <h4 style={{ margin: '4px 0', fontSize: '1.15rem', fontWeight: 800 }}>เป้าหมาย: {blueprint.step2.goalText}</h4>
             <div style={{ fontSize: '0.84rem', color: '#64748B' }}>กรอบแนวคิด: {blueprint.theoryReference}</div>
           </div>
+
+          {/* 🎬 คลิปแอนิเมชันสรุปเนื้อหาพร้อมเสียงบรรยายอัตโนมัติ + ช่องใส่ลิงก์ YouTube */}
+          <InteractiveUnitVideoCard unitId={unitId} />
+
+          {/* 📊 แผนภาพอินโฟกราฟิกและตารางเปรียบเทียบประจำหน่วย */}
+          <UnitStep2VisualInfographic unitId={unitId} />
 
           {/* Tap-to-open Infographic Cards */}
           <div>
@@ -1234,12 +1256,21 @@ export const UnifiedUnitInteractive: React.FC<UnifiedUnitInteractiveProps> = ({
          ===================================================================== */}
       {activeStage === 'step3' && (
         <div className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div>
-            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#2563EB' }}>
-              ขั้นที่ 3: ดูตัวอย่าง ({blueprint.step3.timeText})
-            </span>
-            <h4 style={{ margin: '4px 0', fontSize: '1.15rem', fontWeight: 800 }}>เป้าหมาย: {blueprint.step3.goalText}</h4>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px' }}>
+            <div>
+              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#2563EB' }}>
+                ขั้นที่ 3: ดูตัวอย่าง ({blueprint.step3.timeText})
+              </span>
+              <h4 style={{ margin: '4px 0', fontSize: '1.15rem', fontWeight: 800 }}>เป้าหมาย: {blueprint.step3.goalText}</h4>
+            </div>
+            <VoiceNarratorButton
+              text={blueprint.step3.hotspots.map((h, i) => `จุดที่ ${i + 1} ${h.field}: ${h.hotspotExplanation}`).join(' ')}
+              label="ฟังเสียงอธิบายตัวอย่าง"
+            />
           </div>
+
+          {/* ภาพจำลองชิ้นงานตัวอย่าง / กระดาน Post-it / หน้าจอตรวจ AI */}
+          <UnitStep3VisualMockup unitId={unitId} />
 
           {/* Worked Example with Hotspots */}
           <div>
@@ -1421,6 +1452,8 @@ export const UnifiedUnitInteractive: React.FC<UnifiedUnitInteractiveProps> = ({
               {blueprint.step4.instructionBanner}
             </div>
           </div>
+
+          {unitId === '2.3' && <UnitStep2VisualInfographic unitId="2.3" />}
 
           {/* Reference Box from Step 1 / Cross-Unit */}
           {(Object.keys(state.step1SurveyAnswers).length > 0 || crossUnit2_2Summary || unitId === '4.2') && (

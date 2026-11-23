@@ -20,6 +20,7 @@ import {
 import { EvaluatorEngine } from '../utils/evaluatorEngine';
 import { ArtifactPdfModal } from './ArtifactPdfModal';
 import { SoundService } from '../services/audio';
+import { InteractiveUnitVideoCard, VoiceNarratorButton } from './UnitRichMediaPanel';
 import {
   Clock,
   CheckCircle2,
@@ -1237,17 +1238,26 @@ export const Unit1_1Interactive: React.FC<Props> = ({
       ===================================================================== */}
       {state.currentStage === 'step2' && (
         <div className="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
-          <div className="pb-4 border-b border-slate-100">
-            <span className="text-xs font-extrabold text-indigo-800 bg-indigo-50 border border-indigo-200 px-3 py-1 rounded-full">
-              ขั้นที่ 2 จาก 5 · เรียนรู้เนื้อหาย่อย (7 นาที)
-            </span>
-            <h3 className="text-lg sm:text-xl font-black text-slate-900 mt-2">
-              องค์ประกอบแผน 4 ช่อง และเกณฑ์การเลือกช่องทาง 3 ข้อ
-            </h3>
-            <p className="text-xs text-slate-500">
-              สิ่งที่ได้: อธิบายองค์ประกอบ 4 ช่อง และใช้เกณฑ์เลือกช่องทางกับข้อมูลจริงได้
-            </p>
+          <div className="pb-4 border-b border-slate-100 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <span className="text-xs font-extrabold text-indigo-800 bg-indigo-50 border border-indigo-200 px-3 py-1 rounded-full">
+                ขั้นที่ 2 จาก 5 · เรียนรู้เนื้อหาย่อย (7 นาที)
+              </span>
+              <h3 className="text-lg sm:text-xl font-black text-slate-900 mt-2">
+                องค์ประกอบแผน 4 ช่อง และเกณฑ์การเลือกช่องทาง 3 ข้อ
+              </h3>
+              <p className="text-xs text-slate-500">
+                สิ่งที่ได้: อธิบายองค์ประกอบ 4 ช่อง และใช้เกณฑ์เลือกช่องทางกับข้อมูลจริงได้
+              </p>
+            </div>
+            <VoiceNarratorButton
+              text="องค์ประกอบแผนสื่อสาร 4 ช่อง ได้แก่ 1 เป้าหมาย ระบุใคร ทำอะไร ภายในเมื่อไร 2 ผู้รับสาร แยกผู้รับหลักและผู้รับรอง 3 ข้อมูลหลัก ไม่เกิน 3 ประโยค และ 4 ช่องทาง เลือก 2 ถึง 3 ช่องทางที่ถึงเร็วพอ ตรงกลุ่ม และตอบกลับได้"
+              label="ฟังเสียงสรุปเนื้อหา"
+            />
           </div>
+
+          {/* 🎬 คลิปแอนิเมชันสรุปหน่วย 1.1 พร้อมเสียงบรรยาย + ช่องใส่ลิงก์ YouTube */}
+          <InteractiveUnitVideoCard unitId="1.1" />
 
           {/* ขั้น 2.1: อินโฟกราฟิกแตะเปิดทีละช่อง */}
           <div className="space-y-3">
